@@ -46,7 +46,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: "Operations",
     items: [
       { href: "/locations", label: "Locations", icon: Building2 },
-      { href: "/mappings", label: "Mappings", icon: ArrowLeftRight },
+      { href: "/mappings", label: "Mappings", icon: ArrowLeftRight, onDev: true },
       { href: "/menu", label: "Menu sync", icon: BookOpen, onDev: true },
       { href: "/integrations", label: "Integrations", icon: Plug },
       { href: "/opening-times", label: "Opening times", icon: Clock, onDev: true },

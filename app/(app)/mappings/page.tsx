@@ -1,4 +1,5 @@
 import { AlertTriangle, Plus, Search } from "lucide-react"
+import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 
@@ -28,11 +29,16 @@ export default function MappingsPage() {
         title="Product & modifier mappings"
         description="The translation layer. Every Shopify variant ID and Takeaway item ID is bound to a Lightspeed PLU. Drift here breaks orders silently — we surface it loudly."
         actions={
-          <Button size="sm" className="h-9 gap-2 rounded-full text-[12.5px]">
+          <Button size="sm" disabled className="h-9 gap-2 rounded-full text-[12.5px]">
             <Plus className="h-3.5 w-3.5" />
             New mapping
           </Button>
         }
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="The product_mapping + modifier_mapping tables (RFC-007 / F44) are pending migration. Phase 1 Shopify→LS push currently uses inline PLU mapping in the n8n workflow. UI CRUD lands once the tables are migrated and the n8n flow reads them as the source of truth."
       />
 
       <div className="grid grid-cols-3 gap-3">
