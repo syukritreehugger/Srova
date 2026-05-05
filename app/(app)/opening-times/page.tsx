@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/dashboard/page-header';
+import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { createClient } from '@/lib/supabase/server';
 import { LOCATIONS } from '@/lib/constants';
 import { HoursForm } from './_components/hours-form';
@@ -25,6 +26,11 @@ export default async function OpeningTimesPage() {
         eyebrow="Operations"
         title="Opening times"
         description="Per-location weekly schedule. Orders placed outside these hours are scheduled or rejected at ingestion."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Opening times (F37) ships with Phase 2 — JET Connect. Phase 1 Shopify orders honour Shopify shop hours directly."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

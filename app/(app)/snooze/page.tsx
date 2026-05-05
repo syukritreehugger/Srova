@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/dashboard/page-header';
+import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { createClient } from '@/lib/supabase/server';
 import { LOCATIONS, type LocationKey } from '@/lib/constants';
 import { SnoozeRow } from './_components/snooze-row';
@@ -26,6 +27,11 @@ export default async function SnoozePage({
         eyebrow="Operations"
         title="Item snooze"
         description="Mark menu items as unavailable temporarily. Snoozed items are rejected at order ingestion across all channels."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Snooze (F36) ships with Phase 2 — JET Connect partner API. Phase 1 (Shopify → Lightspeed) does not push availability changes downstream yet."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">

@@ -22,8 +22,16 @@ import {
   ShoppingBag,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { OnDevBadge } from "./on-dev-badge"
 
-const NAV = [
+interface NavItem {
+  href: string
+  label: string
+  icon: typeof LayoutDashboard
+  onDev?: boolean
+}
+
+const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: "Pipeline",
     items: [
@@ -31,7 +39,7 @@ const NAV = [
       { href: "/orders", label: "Orders", icon: ShoppingBag },
       { href: "/pipeline", label: "Pipeline", icon: GitBranch },
       { href: "/alerts", label: "Alerts & DLQ", icon: AlertTriangle },
-      { href: "/audit", label: "Audit log", icon: FileSearch },
+      { href: "/audit", label: "Audit log", icon: FileSearch, onDev: true },
     ],
   },
   {
@@ -39,19 +47,19 @@ const NAV = [
     items: [
       { href: "/locations", label: "Locations", icon: Building2 },
       { href: "/mappings", label: "Mappings", icon: ArrowLeftRight },
-      { href: "/menu", label: "Menu sync", icon: BookOpen },
+      { href: "/menu", label: "Menu sync", icon: BookOpen, onDev: true },
       { href: "/integrations", label: "Integrations", icon: Plug },
-      { href: "/opening-times", label: "Opening times", icon: Clock },
-      { href: "/snooze", label: "Snooze", icon: BellOff },
-      { href: "/restaurant-status", label: "Online/Offline", icon: Power },
+      { href: "/opening-times", label: "Opening times", icon: Clock, onDev: true },
+      { href: "/snooze", label: "Snooze", icon: BellOff, onDev: true },
+      { href: "/restaurant-status", label: "Online/Offline", icon: Power, onDev: true },
     ],
   },
   {
     label: "Compliance",
     items: [
       { href: "/cutover", label: "Cutover", icon: GitMerge },
-      { href: "/gdpr", label: "GDPR / DSAR", icon: ShieldCheck },
-      { href: "/settings", label: "Settings", icon: Settings },
+      { href: "/gdpr", label: "GDPR / DSAR", icon: ShieldCheck, onDev: true },
+      { href: "/settings", label: "Settings", icon: Settings, onDev: true },
     ],
   },
 ]
@@ -113,6 +121,7 @@ export function Sidebar() {
                         strokeWidth={2}
                       />
                       <span className="flex-1 truncate">{item.label}</span>
+                      {item.onDev && <OnDevBadge variant="pill" />}
                     </Link>
                   </li>
                 )

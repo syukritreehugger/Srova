@@ -1,4 +1,5 @@
 import { Check, Lock } from "lucide-react"
+import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +22,11 @@ export default function SettingsPage() {
         eyebrow="Configuration"
         title="Settings"
         description="Secrets, scheduled jobs and feature flags. All credentials live in Supabase Vault — never in code."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Settings UI is a placeholder. Real secret rotation and feature-flag controls land alongside CASL RBAC (T-29) — for now manage via Supabase Studio + n8n credentials."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">

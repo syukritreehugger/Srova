@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/dashboard/page-header';
+import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { createClient } from '@/lib/supabase/server';
 import { LOCATIONS } from '@/lib/constants';
 import { StatusCard } from './_components/status-card';
@@ -18,6 +19,11 @@ export default async function RestaurantStatusPage() {
         eyebrow="Operations"
         title="Restaurant online / offline"
         description="Toggle order intake per location. Offline = new orders rejected at ingestion. Use during kitchen overload, brief closures, or emergencies."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Online/offline toggle (F38) ships with Phase 2 — JET Connect. For Phase 1, Shopify intake is controlled in Shopify Admin directly."
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

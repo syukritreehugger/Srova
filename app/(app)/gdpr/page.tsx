@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/dashboard/page-header';
+import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { DsarForm } from './_components/dsar-form';
 
 export default function GdprPage() {
@@ -8,6 +9,11 @@ export default function GdprPage() {
         eyebrow="Compliance"
         title="GDPR / DSAR"
         description="Data Subject Access Requests. Export or redact all personal data tied to a customer email. Required to fulfil within 30 days under GDPR Art. 15/17."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="DSAR form (RFC-011 / F73) is functional but the audit_log table backing the request log is pending migration. Use only for design preview — do not submit real customer requests yet."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

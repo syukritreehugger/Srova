@@ -24,7 +24,7 @@ export interface MenuSyncRow {
 }
 
 export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
-  if (process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1') {
+  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
     return [];
   }
   const supabase = await createClient();
@@ -116,7 +116,7 @@ export async function getMenuSyncStatus(): Promise<{
   lastSyncAt: string | null;
   rows: MenuSyncRow[];
 }> {
-  if (process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1') {
+  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
     return { lastSyncAt: null, rows: [] };
   }
   const supabase = await createClient();

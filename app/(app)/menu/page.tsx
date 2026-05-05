@@ -1,5 +1,6 @@
 import { AlertTriangle, Check, RefreshCw, X } from "lucide-react"
 import { MenuSyncStatus } from "@/components/dashboard/menu-sync-status"
+import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 import { MENU_ITEMS } from "@/lib/data"
@@ -15,11 +16,16 @@ export default async function MenuPage() {
         title="Menu sync engine"
         description="Lightspeed L-Series is the source of truth. Prices, modifiers and availability propagate to Shopify automatically and to Takeaway via supervised scraping."
         actions={
-          <Button size="sm" className="h-9 gap-2 rounded-full text-[12.5px]">
+          <Button size="sm" disabled className="h-9 gap-2 rounded-full text-[12.5px]">
             <RefreshCw className="h-3.5 w-3.5" />
             Trigger full sync
           </Button>
         }
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Menu sync engine (RFC-007 / F41-F47) is being implemented after the Shopify→LS push is stable. Phase 1 uses manual menu maintenance in Shopify Admin and Lightspeed BackOffice."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
