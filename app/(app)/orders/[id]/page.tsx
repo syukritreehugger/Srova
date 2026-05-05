@@ -78,10 +78,10 @@ export default async function OrderDetailPage({
     order.raw_payload_id
       ? supabase
           .from('raw_orders')
-          .select('payload')
+          .select('raw_payload')
           .eq('id', order.raw_payload_id)
           .maybeSingle()
-      : Promise.resolve({ data: null as { payload: unknown } | null }),
+      : Promise.resolve({ data: null as { raw_payload: unknown } | null }),
   ]);
 
   const customer = (order.customer ?? {}) as CustomerJson;
@@ -290,7 +290,7 @@ export default async function OrderDetailPage({
             </div>
             <pre className="mt-3 max-h-[600px] overflow-auto rounded-xl border border-border bg-background p-4 text-[12px] leading-relaxed font-mono">
               {JSON.stringify(
-                (rawRes.data as { payload?: unknown } | null)?.payload ?? order,
+                (rawRes.data as { raw_payload?: unknown } | null)?.raw_payload ?? order,
                 null,
                 2
               )}

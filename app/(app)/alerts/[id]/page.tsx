@@ -37,10 +37,10 @@ export default async function DlqDetailPage({
   if (dlq.raw_payload_id != null) {
     const { data: raw } = await supabase
       .from('raw_orders')
-      .select('payload')
+      .select('raw_payload')
       .eq('id', dlq.raw_payload_id)
       .maybeSingle();
-    rawPayload = (raw as { payload?: unknown } | null)?.payload ?? null;
+    rawPayload = (raw as { raw_payload?: unknown } | null)?.raw_payload ?? null;
   }
 
   const errJson = JSON.stringify(dlq.last_error, null, 2);

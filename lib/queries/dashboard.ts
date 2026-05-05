@@ -153,10 +153,12 @@ export async function getDashboardStats(
         .select('source, status, created_at, payment, location_key')
         .gte('created_at', since24h)
     ),
-    supabase
-      .from('v_pipeline_latency')
-      .select('p50_ls_s, p95_ls_s, p99_ls_s, n')
-      .gte('bucket', since24h),
+    withLoc(
+      supabase
+        .from('v_pipeline_latency')
+        .select('p50_ls_s, p95_ls_s, p99_ls_s, n, location_key')
+        .gte('bucket', since24h)
+    ),
     withLoc(
       supabase
         .from('canonical_orders')

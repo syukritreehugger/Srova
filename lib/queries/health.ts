@@ -33,10 +33,10 @@ export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
 
   const [hmacFails, lsTokens, recentPushed] = await Promise.all([
     supabase
-      .from('dlq_alerts')
+      .from('raw_orders')
       .select('id', { count: 'exact', head: true })
-      .eq('queue_name', 'shopify_webhook_hmac')
-      .gte('created_at', since24h),
+      .eq('hmac_valid', false)
+      .gte('received_at', since24h),
     supabase
       .from('ls_tokens')
       .select('location_key, expires_at, updated_at'),

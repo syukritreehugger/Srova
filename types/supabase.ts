@@ -82,19 +82,29 @@ export interface Database {
       raw_orders: {
         Row: {
           id: number;
-          source: OrderSource;
+          source: OrderSource | null;
           location_key: string;
           external_ref: string | null;
-          payload: Json;
+          raw_payload: Json | null;
+          headers: Json | null;
+          hmac_valid: boolean | null;
           received_at: string;
+          shopify_order_id: number;
+          shopify_order_name: string | null;
+          line_items: Json | null;
         };
         Insert: {
           id?: number;
-          source: OrderSource;
+          source?: OrderSource | null;
           location_key: string;
           external_ref?: string | null;
-          payload: Json;
+          raw_payload?: Json | null;
+          headers?: Json | null;
+          hmac_valid?: boolean | null;
           received_at?: string;
+          shopify_order_id: number;
+          shopify_order_name?: string | null;
+          line_items?: Json | null;
         };
         Update: Partial<Database['public']['Tables']['raw_orders']['Insert']>;
         Relationships: [];
