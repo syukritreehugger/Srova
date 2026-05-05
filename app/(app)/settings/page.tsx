@@ -1,7 +1,9 @@
-import { Check, Lock } from "lucide-react"
+import { Check, GitBranch, Lock } from "lucide-react"
 import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
+import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID } from "@/lib/n8n"
+import { PipelineToggle } from "./_components/pipeline-toggle"
 
 const SECRETS = [
   { key: "SHOPIFY_WEBHOOK_SECRET", set: true, description: "HMAC-SHA256 webhook signature secret" },
@@ -15,18 +17,56 @@ const SECRETS = [
   { key: "SENTRY_DSN", set: false, description: "Optional · error tracking" },
 ]
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const configured = isN8nConfigured()
+  let pollerActive = false
+  let pollerError: string | null = null
+  if (configured) {
+    const r = await getWorkflow(POLLER_NORMALIZE_ID)
+    if (r.ok) pollerActive = r.data.active
+    else pollerError = r.error
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Configuration"
         title="Settings"
-        description="Secrets, scheduled jobs and feature flags. All credentials live in Supabase Vault — never in code."
+        description="Pipeline control, secrets, dan feature flags. Operator-friendly toggle untuk pause/resume Frituur OS push ke Lightspeed."
       />
+
+      <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+          <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Pipeline · Shopify → Frituur OS → Lightspeed
+            </div>
+            <div className="mt-0.5 text-[14px] font-medium">
+              Toggle global push ke POS
+            </div>
+          </div>
+        </div>
+        <div className="p-5">
+          <PipelineToggle
+            initialActive={pollerActive}
+            configured={configured}
+            configError={pollerError}
+          />
+          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-[11.5px] text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
+            tombol ini activate/deactivate workflow{' '}
+            <code className="font-mono text-[11px]">poller_q_orders_normalize</code> di n8n.
+            Webhook Shopify <em>tetap masuk</em> dan tersimpan di{' '}
+            <code className="font-mono text-[11px]">raw_orders</code> apa pun statusnya — yang
+            di-pause cuma push ke POS Lightspeed.
+          </div>
+        </div>
+      </div>
 
       <OnDevBadge
         variant="banner"
-        reason="Settings UI is a placeholder. Real secret rotation and feature-flag controls land alongside CASL RBAC (T-29) — for now manage via Supabase Studio + n8n credentials."
+        reason="Secret rotation, RBAC, dan feature-flag controls penuh land bersama CASL (T-29). Untuk Phase 1 hanya pipeline toggle yang aktif."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
@@ -43,7 +83,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="h-8 rounded-full text-[12px] bg-transparent">
+          <Button variant="outline" size="sm" disabled className="h-8 rounded-full text-[12px] bg-transparent">
             Rotate keys
           </Button>
         </div>
@@ -66,42 +106,6 @@ export default function SettingsPage() {
             </li>
           ))}
         </ul>
-      </div>
-
-      <div className="card-elevated rounded-2xl border border-border bg-card p-5">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Feature flags</div>
-        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-          {[
-            { name: "Takeaway scraper", enabled: true, desc: "Authenticated session polling, 30s interval" },
-            { name: "Auto menu sync to Takeaway", enabled: false, desc: "Manual operator workflow recommended" },
-            { name: "Compensating Shipday delete", enabled: true, desc: "On Lightspeed failure within 5min" },
-            { name: "Aggressive scrape (10s) at peak", enabled: true, desc: "Fri/Sat 17:00–22:00" },
-          ].map((f) => (
-            <div key={f.name} className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3">
-              <div>
-                <div className="text-[13px] font-medium">{f.name}</div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">{f.desc}</div>
-              </div>
-              <button
-                role="switch"
-                aria-checked={f.enabled}
-                className={
-                  f.enabled
-                    ? "relative h-5 w-9 shrink-0 rounded-full bg-foreground transition-colors"
-                    : "relative h-5 w-9 shrink-0 rounded-full bg-muted-foreground/30 transition-colors"
-                }
-              >
-                <span
-                  className={
-                    f.enabled
-                      ? "absolute left-[18px] top-0.5 h-4 w-4 rounded-full bg-background shadow-sm"
-                      : "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-background shadow-sm"
-                  }
-                />
-              </button>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )

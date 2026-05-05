@@ -59,7 +59,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/cutover", label: "Cutover", icon: GitMerge },
       { href: "/gdpr", label: "GDPR / DSAR", icon: ShieldCheck, onDev: true },
-      { href: "/settings", label: "Settings", icon: Settings, onDev: true },
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ]

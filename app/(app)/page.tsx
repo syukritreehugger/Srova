@@ -1,5 +1,6 @@
 import { Calendar, Download } from "lucide-react"
 import { AlertsFeed } from "@/components/dashboard/alerts-feed"
+import { BacklogBanner } from "@/components/dashboard/backlog-banner"
 import { IntegrationHealth } from "@/components/dashboard/integration-health"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LiveOrders } from "@/components/dashboard/live-orders"
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { getDashboardStats } from "@/lib/queries/dashboard"
 import { getRecentAlerts } from "@/lib/queries/alerts"
 import { getIntegrationHealth, getMenuSyncStatus } from "@/lib/queries/health"
+import { getPipelineBacklog } from "@/lib/queries/pipeline-health"
 import type { LocationKey } from "@/lib/constants"
 
 export default async function OverviewPage({
@@ -22,11 +24,12 @@ export default async function OverviewPage({
   const { loc: rawLoc } = await searchParams
   const loc = (rawLoc as LocationKey | undefined) ?? undefined
 
-  const [stats, alerts, integrations, menuSync] = await Promise.all([
+  const [stats, alerts, integrations, menuSync, backlog] = await Promise.all([
     getDashboardStats(loc),
     getRecentAlerts(8),
     getIntegrationHealth(),
     getMenuSyncStatus(),
+    getPipelineBacklog(),
   ])
 
   const today = new Date().toLocaleDateString("nl-BE", {
@@ -63,6 +66,8 @@ export default async function OverviewPage({
           </>
         }
       />
+
+      <BacklogBanner backlog={backlog} />
 
       <KpiCards kpis={stats.kpis} />
 
