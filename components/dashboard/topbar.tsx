@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { Bell, Command, RefreshCw, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,9 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border glass px-6 md:px-10">
-      <LocationSwitcher />
+      <Suspense fallback={<div className="h-9 w-40 rounded-full border border-border bg-card" />}>
+        <LocationSwitcher />
+      </Suspense>
 
       {health && <HealthPill tone={health.tone} label={health.label} />}
 
