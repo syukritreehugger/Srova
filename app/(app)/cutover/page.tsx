@@ -1,4 +1,5 @@
 import { Check, Circle } from 'lucide-react';
+import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +38,11 @@ export default function CutoverPage() {
         eyebrow="Compliance"
         title="Cutover & rollback"
         description="Phase progression from Deliverect to Frituur OS. Rollback to Deliverect by toggling the Shopify webhook target — ≤10 min to restore."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Phase tracker, rollback control, dan dual-run cost saat ini hardcoded. Akan disambungkan ke tabel cutover_state setelah RFC-013 (cutover orchestration) landed."
       />
 
       <div className="card-elevated rounded-2xl border border-border bg-card p-5">

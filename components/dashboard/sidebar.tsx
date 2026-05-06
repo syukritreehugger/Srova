@@ -48,7 +48,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { href: "/locations", label: "Locations", icon: Building2 },
       { href: "/mappings", label: "Mappings", icon: ArrowLeftRight, onDev: true },
       { href: "/menu", label: "Menu sync", icon: BookOpen, onDev: true },
-      { href: "/integrations", label: "Integrations", icon: Plug },
+      { href: "/integrations", label: "Integrations", icon: Plug, onDev: true },
       { href: "/opening-times", label: "Opening times", icon: Clock, onDev: true },
       { href: "/snooze", label: "Snooze", icon: BellOff, onDev: true },
       { href: "/restaurant-status", label: "Online/Offline", icon: Power, onDev: true },
@@ -57,7 +57,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: "Compliance",
     items: [
-      { href: "/cutover", label: "Cutover", icon: GitMerge },
+      { href: "/cutover", label: "Cutover", icon: GitMerge, onDev: true },
       { href: "/gdpr", label: "GDPR / DSAR", icon: ShieldCheck, onDev: true },
       { href: "/settings", label: "Settings", icon: Settings },
     ],

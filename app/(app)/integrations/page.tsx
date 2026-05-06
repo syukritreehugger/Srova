@@ -1,4 +1,5 @@
 import { ChevronRight, ExternalLink } from "lucide-react"
+import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { INTEGRATIONS, type IntegrationStatus } from "@/lib/data"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,11 @@ export default function IntegrationsPage() {
         eyebrow="Subsystem 7"
         title="Integration health"
         description="Six external systems power FRITUUR OS. Real-time status, uptime and latency across order ingestion, POS, delivery and infrastructure."
+      />
+
+      <OnDevBadge
+        variant="banner"
+        reason="Integration cards saat ini pakai data hardcoded di lib/data.ts. Versi live (Shopify HMAC, LS token, Shipday push) sudah ada di widget IntegrationHealth pada halaman /. Page ini akan diganti dengan query nyata setelah scope Phase-1 tutup."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

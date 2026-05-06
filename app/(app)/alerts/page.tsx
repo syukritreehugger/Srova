@@ -1,4 +1,5 @@
 import { AlertsFeed } from "@/components/dashboard/alerts-feed"
+import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { getRecentAlerts } from "@/lib/queries/alerts"
 
@@ -70,8 +71,11 @@ export default async function AlertsPage() {
         </div>
         <div className="card-elevated rounded-2xl border border-border bg-card">
           <div className="border-b border-border px-5 py-4">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Active rules
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Active rules
+              </div>
+              <OnDevBadge variant="inline" />
             </div>
             <div className="mt-0.5 text-[14px] font-medium">
               {RULES.filter((r) => r.enabled).length}{" "}
