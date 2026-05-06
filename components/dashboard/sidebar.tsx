@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -11,9 +12,7 @@ import {
   Clock,
   FileSearch,
   GitBranch,
-  GitMerge,
   LayoutDashboard,
-  LayoutGrid,
   LogOut,
   Plug,
   Power,
@@ -38,7 +37,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { href: "/", label: "Overview", icon: LayoutDashboard },
       { href: "/orders", label: "Orders", icon: ShoppingBag },
       { href: "/pipeline", label: "Pipeline", icon: GitBranch },
-      { href: "/alerts", label: "Alerts & DLQ", icon: AlertTriangle },
+      { href: "/alerts", label: "Alerts", icon: AlertTriangle },
       { href: "/audit", label: "Audit log", icon: FileSearch, onDev: true },
     ],
   },
@@ -57,7 +56,6 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: "Compliance",
     items: [
-      { href: "/cutover", label: "Cutover", icon: GitMerge, onDev: true },
       { href: "/gdpr", label: "GDPR / DSAR", icon: ShieldCheck, onDev: true },
       { href: "/settings", label: "Settings", icon: Settings },
     ],
@@ -76,8 +74,14 @@ export function Sidebar() {
     <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
       {/* Brand */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <LayoutGrid className="h-4 w-4" strokeWidth={2.25} />
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+          <Image
+            src="/gv-logo.png"
+            alt="GV"
+            width={20}
+            height={20}
+            className="brightness-0 invert"
+          />
         </div>
         <div className="flex flex-col leading-tight">
           <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground">

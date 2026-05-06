@@ -1,17 +1,26 @@
 import { PageHeader } from '@/components/dashboard/page-header';
 import { OnDevBadge } from '@/components/dashboard/on-dev-badge';
 import { createClient } from '@/lib/supabase/server';
-import { LOCATIONS } from '@/lib/constants';
+import { LOCATIONS, type LocationKey } from '@/lib/constants';
 import { HoursForm } from './_components/hours-form';
 
 const DOW_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default async function OpeningTimesPage() {
+export default async function OpeningTimesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ loc?: string }>;
+}) {
+  const { loc: rawLoc } = await searchParams;
+  const loc = (rawLoc as LocationKey | undefined) ?? undefined;
+
   const supabase = await createClient();
 
-  const { data: rows } = await supabase
+  let query = supabase
     .from('opening_times')
     .select('location_key, day_of_week, open_time, close_time, is_closed');
+  if (loc) query = query.eq('location_key', loc);
+  const { data: rows } = await query;
 
   const byLoc = new Map<string, typeof rows>();
   for (const loc of LOCATIONS) byLoc.set(loc.key, []);
@@ -30,12 +39,12 @@ export default async function OpeningTimesPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="Opening times (F37) ships with Phase 2 — JET Connect. Phase 1 Shopify orders honour Shopify shop hours directly."
+        reason="Opening hours set here are not enforced on orders yet. Shopify orders still follow the hours configured in your Shopify shop settings."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {LOCATIONS.map((loc) => {
-          const days = (byLoc.get(loc.key) ?? []).sort(
+        {(loc ? LOCATIONS.filter((l) => l.key === loc) : LOCATIONS).map((loc_item) => {
+          const days = (byLoc.get(loc_item.key) ?? []).sort(
             (a, b) => a.day_of_week - b.day_of_week
           );
           const initial = Array.from({ length: 7 }, (_, dow) => {
@@ -49,19 +58,19 @@ export default async function OpeningTimesPage() {
           });
           return (
             <div
-              key={loc.key}
+              key={loc_item.key}
               className="card-elevated rounded-2xl border border-border bg-card p-5"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[14px] font-semibold">{loc.name}</div>
+                  <div className="text-[14px] font-semibold">{loc_item.name}</div>
                   <div className="text-[11.5px] text-muted-foreground">
-                    {loc.city} · {loc.postcode}
+                    {loc_item.city} · {loc_item.postcode}
                   </div>
                 </div>
               </div>
               <HoursForm
-                locationKey={loc.key}
+                locationKey={loc_item.key}
                 initial={initial}
                 dowLabels={DOW_LABEL}
               />

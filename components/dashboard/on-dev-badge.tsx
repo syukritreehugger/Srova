@@ -26,11 +26,11 @@ export function OnDevBadge({
         <Construction className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
         <div className="flex-1 text-[12.5px]">
           <div className="font-semibold text-amber-800 dark:text-amber-300">
-            On Dev — not yet active for Phase 1
+            Coming soon
           </div>
           <div className="mt-0.5 text-amber-700/80 dark:text-amber-400/80">
             {reason ??
-              "This surface depends on a backend that is not yet live for the Shopify → Lightspeed flow. Visible for design review only."}
+              "This feature is still being built and not ready to use yet. You can look around, but nothing here is connected to real data."}
           </div>
         </div>
       </div>

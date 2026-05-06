@@ -1,4 +1,4 @@
-import { Calendar, Download } from "lucide-react"
+import { Suspense } from "react"
 import { AlertsFeed } from "@/components/dashboard/alerts-feed"
 import { BacklogBanner } from "@/components/dashboard/backlog-banner"
 import { IntegrationHealth } from "@/components/dashboard/integration-health"
@@ -9,11 +9,19 @@ import { MenuSyncStatus } from "@/components/dashboard/menu-sync-status"
 import { OrdersChart } from "@/components/dashboard/orders-chart"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { PipelineFlow } from "@/components/dashboard/pipeline-flow"
-import { Button } from "@/components/ui/button"
-import { getDashboardStats } from "@/lib/queries/dashboard"
+import {
+  BannerSkeleton,
+  ChartSkeleton,
+  KpiCardsSkeleton,
+  GridSkeleton,
+  PipelineFlowSkeleton,
+  TableSkeleton,
+} from "@/components/dashboard/skeleton"
+import { getDashboardStats, type DashboardStats } from "@/lib/queries/dashboard"
 import { getRecentAlerts } from "@/lib/queries/alerts"
 import { getIntegrationHealth, getMenuSyncStatus } from "@/lib/queries/health"
 import { getPipelineBacklog } from "@/lib/queries/pipeline-health"
+import { getWorkflow, POLLER_NORMALIZE_ID } from "@/lib/n8n"
 import type { LocationKey } from "@/lib/constants"
 
 export default async function OverviewPage({
@@ -24,15 +32,7 @@ export default async function OverviewPage({
   const { loc: rawLoc } = await searchParams
   const loc = (rawLoc as LocationKey | undefined) ?? undefined
 
-  const [stats, alerts, integrations, menuSync, backlog] = await Promise.all([
-    getDashboardStats(loc),
-    getRecentAlerts(8),
-    getIntegrationHealth(),
-    getMenuSyncStatus(),
-    getPipelineBacklog(),
-  ])
-
-  const today = new Date().toLocaleDateString("nl-BE", {
+  const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -40,64 +40,99 @@ export default async function OverviewPage({
     timeZone: "Europe/Brussels",
   })
 
+  // Single promise, shared across Suspense boundaries — no duplicate DB calls
+  const statsPromise = getDashboardStats(loc)
+
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow={today}
-        title="Operations overview"
-        description="Live state of the FRITUUR OS middleware. Orders flowing in from Shopify, pushed to Lightspeed L-Series and Shipday across three locations."
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 rounded-full text-[12.5px] font-medium bg-transparent"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Today
-            </Button>
-            <Button
-              size="sm"
-              className="h-9 gap-2 rounded-full text-[12.5px] font-medium"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export
-            </Button>
-          </>
-        }
-      />
+    <div className="flex flex-col">
+      <PageHeader eyebrow={today} title="Operations overview" />
 
-      <BacklogBanner backlog={backlog} />
+      <div className="flex flex-col gap-5">
+        <Suspense fallback={<BannerSkeleton />}>
+          <BacklogSection />
+        </Suspense>
 
-      <KpiCards kpis={stats.kpis} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <OrdersChart data={stats.hourlyOrders} />
-        </div>
-        <div className="lg:col-span-1">
-          <PipelineFlow counts={stats.pipelineCounts} />
-        </div>
+        <Suspense fallback={
+          <div className="flex flex-col gap-5">
+            <KpiCardsSkeleton />
+            <PipelineFlowSkeleton />
+            <GridSkeleton />
+          </div>
+        }>
+          <Tier1Section statsPromise={statsPromise} />
+        </Suspense>
       </div>
 
-      <LocationsGrid data={stats.locationHealth} />
+      <div className="h-10" />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <LiveOrders rows={stats.liveOrders} />
-        </div>
-        <div className="flex flex-col gap-4">
-          <IntegrationHealth rows={integrations} />
-        </div>
-      </div>
+      <div className="flex flex-col gap-5">
+        <Suspense fallback={
+          <div className="flex flex-col gap-5">
+            <ChartSkeleton />
+            <TableSkeleton rows={8} />
+          </div>
+        }>
+          <Tier2Section statsPromise={statsPromise} />
+        </Suspense>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <MenuSyncStatus
-          lastSyncAt={menuSync.lastSyncAt}
-          rows={menuSync.rows}
-        />
-        <AlertsFeed alerts={alerts} limit={4} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <Suspense fallback={<TableSkeleton rows={4} />}>
+            <IntegrationSection />
+          </Suspense>
+          <Suspense fallback={<TableSkeleton rows={4} />}>
+            <AlertsSection />
+          </Suspense>
+        </div>
+
+        <Suspense fallback={<TableSkeleton rows={3} />}>
+          <MenuSection />
+        </Suspense>
       </div>
     </div>
   )
+}
+
+async function BacklogSection() {
+  const [backlog, pollerResult] = await Promise.all([
+    getPipelineBacklog(),
+    getWorkflow(POLLER_NORMALIZE_ID),
+  ])
+  const pipelinePaused = pollerResult.ok ? !pollerResult.data.active : false
+  return <BacklogBanner backlog={backlog} pipelinePaused={pipelinePaused} />
+}
+
+async function Tier1Section({ statsPromise }: { statsPromise: Promise<DashboardStats> }) {
+  const stats = await statsPromise
+  return (
+    <div className="flex flex-col gap-5">
+      <KpiCards kpis={stats.kpis} />
+      <PipelineFlow counts={stats.pipelineCounts} />
+      <LocationsGrid data={stats.locationHealth} />
+    </div>
+  )
+}
+
+async function Tier2Section({ statsPromise }: { statsPromise: Promise<DashboardStats> }) {
+  const stats = await statsPromise
+  return (
+    <div className="flex flex-col gap-5">
+      <OrdersChart data={stats.hourlyOrders} />
+      <LiveOrders rows={stats.liveOrders} />
+    </div>
+  )
+}
+
+async function IntegrationSection() {
+  const integrations = await getIntegrationHealth()
+  return <IntegrationHealth rows={integrations} />
+}
+
+async function AlertsSection() {
+  const alerts = await getRecentAlerts(4)
+  return <AlertsFeed alerts={alerts} />
+}
+
+async function MenuSection() {
+  const menuSync = await getMenuSyncStatus()
+  return <MenuSyncStatus lastSyncAt={menuSync.lastSyncAt} rows={menuSync.rows} />
 }

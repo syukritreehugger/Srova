@@ -25,7 +25,7 @@ export default async function MenuPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="Menu sync engine (RFC-007 / F41-F47) is being implemented after the Shopify→LS push is stable. Phase 1 uses manual menu maintenance in Shopify Admin and Lightspeed BackOffice."
+        reason="Automatic menu syncing is not active yet. For now, manage your menu directly in Shopify Admin and Lightspeed BackOffice as usual."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

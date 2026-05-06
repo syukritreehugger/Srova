@@ -1,11 +1,8 @@
 import {
+  AlertTriangle,
   CheckCircle2,
-  ChefHat,
   Coins,
-  Gauge,
   ShoppingBag,
-  Timer,
-  TrendingUp,
 } from "lucide-react"
 import type { DashboardKpis } from "@/lib/queries/dashboard"
 
@@ -19,14 +16,14 @@ interface Tile {
 
 function buildTiles(kpis: DashboardKpis): Tile[] {
   const eur = (cents: number) =>
-    `€${(cents / 100).toLocaleString("nl-BE", {
+    `€${(cents / 100).toLocaleString("en-GB", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`
   return [
     {
       label: "Orders 24h",
-      value: kpis.ordersToday.toLocaleString("nl-BE"),
+      value: kpis.ordersToday.toLocaleString("en-GB"),
       icon: ShoppingBag,
       hint: "rolling 24h",
     },
@@ -40,7 +37,7 @@ function buildTiles(kpis: DashboardKpis): Tile[] {
       label: "Success rate",
       value: `${kpis.successRate24h}%`,
       icon: CheckCircle2,
-      hint: "L-Series accept rate",
+      hint: "POS accept rate",
       tone:
         kpis.successRate24h >= 99
           ? "good"
@@ -49,29 +46,9 @@ function buildTiles(kpis: DashboardKpis): Tile[] {
             : "bad",
     },
     {
-      label: "Latency p50",
-      value: `${kpis.latencyP50ms} ms`,
-      icon: Gauge,
-      hint: "order → POS",
-    },
-    {
-      label: "Latency p95",
-      value: `${kpis.latencyP95ms} ms`,
-      icon: Timer,
-      hint: "p95 order → POS",
-      tone: kpis.latencyP95ms > 5000 ? "warn" : undefined,
-    },
-    {
-      label: "Latency p99",
-      value: `${kpis.latencyP99ms} ms`,
-      icon: TrendingUp,
-      hint: "p99 order → POS",
-      tone: kpis.latencyP99ms > 10000 ? "warn" : undefined,
-    },
-    {
-      label: "Dead-letter queue",
-      value: kpis.dlqDepth.toLocaleString("nl-BE"),
-      icon: ChefHat,
+      label: "Orders stuck",
+      value: kpis.dlqDepth.toLocaleString("en-GB"),
+      icon: AlertTriangle,
       hint: "needs operator review",
       tone: kpis.dlqDepth > 0 ? "warn" : "good",
     },
@@ -81,7 +58,7 @@ function buildTiles(kpis: DashboardKpis): Tile[] {
 export function KpiCards({ kpis }: { kpis: DashboardKpis }) {
   const tiles = buildTiles(kpis)
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {tiles.map((it) => {
         const Icon = it.icon
         const valueClass =

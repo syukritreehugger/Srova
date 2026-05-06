@@ -21,7 +21,7 @@ export interface ListOrdersResult {
 
 export interface ListOrdersParams {
   source?: 'shopify' | 'takeaway';
-  state?: OrderState;
+  state?: OrderState | 'in_flight';
   loc?: LocationKey;
   page?: number;
   pageSize?: number;
@@ -57,7 +57,11 @@ export async function listOrders(
     .range(from, to);
 
   if (params.source) q = q.eq('source', params.source);
-  if (params.state) q = q.eq('status', params.state);
+  if (params.state === 'in_flight') {
+    q = q.in('status', [...IN_FLIGHT]);
+  } else if (params.state) {
+    q = q.eq('status', params.state);
+  }
   if (params.loc) q = q.eq('location_key', params.loc);
 
   const [listRes, countsRes] = await Promise.all([

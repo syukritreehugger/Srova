@@ -21,7 +21,7 @@ function timeAgo(iso: string): string {
 }
 
 function eur(cents: number): string {
-  return `€${(cents / 100).toLocaleString("nl-BE", {
+  return `€${(cents / 100).toLocaleString("en-GB", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`

@@ -15,6 +15,12 @@ const TONE: Record<AlertSeverity, string> = {
   info: "text-blue-600 bg-blue-500/10",
 }
 
+const ROW_ACCENT: Record<AlertSeverity, string> = {
+  critical: "border-l-2 border-l-rose-500 bg-rose-500/[0.03]",
+  warning: "border-l-2 border-l-amber-400",
+  info: "",
+}
+
 function timeAgo(iso: string): string {
   const d = new Date(iso)
   const m = Math.max(1, Math.round((Date.now() - d.getTime()) / 60000))
@@ -24,14 +30,7 @@ function timeAgo(iso: string): string {
   return `${Math.round(h / 24)}d`
 }
 
-export function AlertsFeed({
-  alerts,
-  limit,
-}: {
-  alerts: AlertRow[]
-  limit?: number
-}) {
-  const rows = limit ? alerts.slice(0, limit) : alerts
+export function AlertsFeed({ alerts, showViewAll = true }: { alerts: AlertRow[]; showViewAll?: boolean }) {
   const critical = alerts.filter((a) => a.severity === "critical").length
   const warning = alerts.filter((a) => a.severity === "warning").length
 
@@ -40,7 +39,7 @@ export function AlertsFeed({
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
           <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Alerts & DLQ
+            Alerts
           </div>
           <div className="mt-0.5 text-[14px] font-medium">
             <span
@@ -60,26 +59,31 @@ export function AlertsFeed({
             </span>
           </div>
         </div>
-        <Link
-          href="/alerts"
-          className="flex items-center gap-1 text-[12px] font-medium text-foreground transition-opacity hover:opacity-70"
-        >
-          View all <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
+        {showViewAll && (
+          <Link
+            href="/alerts"
+            className="flex items-center gap-1 text-[12px] font-medium text-foreground transition-opacity hover:opacity-70"
+          >
+            View all <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </div>
 
-      {rows.length === 0 ? (
+      {alerts.length === 0 ? (
         <div className="px-5 py-10 text-center text-[12px] text-muted-foreground">
           No active alerts.
         </div>
       ) : (
         <ul className="divide-y divide-border">
-          {rows.map((a) => {
+          {alerts.map((a) => {
             const Icon = ICON[a.severity]
             return (
               <li
                 key={a.id}
-                className="flex gap-3 px-5 py-3.5 transition-colors hover:bg-muted/30"
+                className={cn(
+                  "flex gap-3 px-5 py-3.5 transition-colors hover:bg-muted/30",
+                  ROW_ACCENT[a.severity],
+                )}
               >
                 <div
                   className={cn(
@@ -111,8 +115,13 @@ export function AlertsFeed({
                     <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
                       {a.source}
                     </span>
+                    {a.severity === "critical" && (
+                      <span className="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600">
+                        {a.attempt_count} retries
+                      </span>
+                    )}
                     {a.resolved_at && (
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                         resolved
                       </span>
                     )}

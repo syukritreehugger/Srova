@@ -31,7 +31,7 @@ export default async function SnoozePage({
 
       <OnDevBadge
         variant="banner"
-        reason="Snooze (F36) ships with Phase 2 — JET Connect partner API. Phase 1 (Shopify → Lightspeed) does not push availability changes downstream yet."
+        reason="Item snoozing is not active yet. Marking items here won't affect incoming orders. Manage item availability directly in Shopify for now."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">

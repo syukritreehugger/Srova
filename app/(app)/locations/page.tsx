@@ -1,10 +1,19 @@
 import { LocationsGrid } from "@/components/dashboard/locations-grid"
 import { PageHeader } from "@/components/dashboard/page-header"
-import { LOCATIONS } from "@/lib/constants"
+import { LOCATIONS, type LocationKey } from "@/lib/constants"
 import { getDashboardStats } from "@/lib/queries/dashboard"
 
-export default async function LocationsPage() {
-  const stats = await getDashboardStats()
+export default async function LocationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ loc?: string }>;
+}) {
+  const { loc: rawLoc } = await searchParams;
+  const loc = (rawLoc as LocationKey | undefined) ?? undefined;
+  const stats = await getDashboardStats(loc)
+  const filteredLocations = loc
+    ? LOCATIONS.filter((l) => l.key === loc)
+    : LOCATIONS;
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,8 +31,10 @@ export default async function LocationsPage() {
             Location configuration
           </div>
           <div className="mt-0.5 text-[14px] font-medium">
-            {LOCATIONS.length}{" "}
-            <span className="text-muted-foreground">locations</span>
+            {filteredLocations.length}{" "}
+            <span className="text-muted-foreground">
+              {loc ? `of ${LOCATIONS.length} ` : ""}locations
+            </span>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -42,7 +53,7 @@ export default async function LocationsPage() {
               </tr>
             </thead>
             <tbody>
-              {LOCATIONS.map((l) => (
+              {filteredLocations.map((l) => (
                 <tr
                   key={l.key}
                   className="border-b border-border/60 last:border-b-0 hover:bg-muted/30"

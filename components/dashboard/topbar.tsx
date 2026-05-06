@@ -1,10 +1,13 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { Bell, Command, RefreshCw, Search } from "lucide-react"
+import { RefreshCw, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { LocationSwitcher } from "./location-switcher"
+import { SearchBar } from "./search-bar"
+import { AlertBell } from "./alert-bell"
 import { createClient } from "@/lib/supabase/browser"
 
 type HealthTone = "healthy" | "degraded" | "critical"
@@ -31,11 +34,14 @@ function HealthPill({ tone, label }: { tone: HealthTone; label: string }) {
 
 export function Topbar({
   health,
+  alertCount: serverAlertCount,
 }: {
   health?: { tone: HealthTone; label: string }
+  alertCount?: number
 }) {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -53,58 +59,75 @@ export function Topbar({
     : "··"
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border glass px-6 md:px-10">
-      <Suspense fallback={<div className="h-9 w-40 rounded-full border border-border bg-card" />}>
-        <LocationSwitcher />
-      </Suspense>
+    <TooltipProvider delayDuration={300}>
+      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border glass px-6 md:px-10">
+        <Suspense fallback={<div className="h-9 w-40 rounded-full border border-border bg-card" />}>
+          <LocationSwitcher healthTone={health?.tone} />
+        </Suspense>
 
-      {health && <HealthPill tone={health.tone} label={health.label} />}
+        {health && <HealthPill tone={health.tone} label={health.label} />}
 
-      <div className="hidden flex-1 md:block">
-        <div className="relative mx-auto max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search orders, PLUs, customers…"
-            className="h-9 w-full rounded-full border border-border bg-card pl-9 pr-16 text-[13px] outline-none transition placeholder:text-muted-foreground focus:border-foreground/30 focus:ring-2 focus:ring-foreground/5"
-          />
-          <kbd className="pointer-events-none absolute right-2 top-1/2 inline-flex h-5 -translate-y-1/2 items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-            <Command className="h-3 w-3" />K
-          </kbd>
-        </div>
-      </div>
-
-      <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Refresh"
-          onClick={() => router.refresh()}
-          className="h-9 w-9 rounded-full p-0"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative h-9 w-9 rounded-full p-0"
-          aria-label="Alerts"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-background" />
-        </Button>
-        <div className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-semibold">
-            {initials}
-          </div>
-          <div className="hidden flex-col leading-tight md:flex">
-            <span className="text-[12px] font-medium">
-              {email ?? "Loading…"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">Operator</span>
+        {/* Desktop: inline search */}
+        <div className="hidden flex-1 md:block">
+          <div className="mx-auto max-w-md">
+            <SearchBar />
           </div>
         </div>
-      </div>
-    </header>
+
+        <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
+          {/* Mobile: search toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Search"
+                onClick={() => setMobileSearchOpen((v) => !v)}
+                className="h-9 w-9 rounded-full p-0 md:hidden"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search orders</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Refresh page"
+                onClick={() => router.refresh()}
+                className="h-9 w-9 rounded-full p-0"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
+
+          <AlertBell initialCount={serverAlertCount ?? 0} />
+
+          <div className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-semibold">
+              {initials}
+            </div>
+            <div className="hidden flex-col leading-tight md:flex">
+              <span className="text-[12px] font-medium">
+                {email ?? "Loading…"}
+              </span>
+              <span className="text-[10px] text-muted-foreground">Operator</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile search bar — expands below header */}
+      {mobileSearchOpen && (
+        <div className="border-b border-border bg-background px-4 py-3 md:hidden">
+          <SearchBar className="w-full" />
+        </div>
+      )}
+    </TooltipProvider>
   )
 }

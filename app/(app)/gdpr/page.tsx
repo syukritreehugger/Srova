@@ -13,7 +13,7 @@ export default function GdprPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="DSAR form (RFC-011 / F73) is functional but the audit_log table backing the request log is pending migration. Use only for design preview — do not submit real customer requests yet."
+        reason="The request form works but submitted requests are not processed yet. Do not use this for real customer data requests until this notice is removed."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

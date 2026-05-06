@@ -105,7 +105,7 @@ export default async function OrderDetailPage({
         title={order.external_ref}
         description={`${locName(order.location_key)} · ${customerName}`}
         actions={
-          <Button variant="outline" size="sm" asChild className="h-9 gap-2 rounded-full text-[12.5px]">
+          <Button variant="outline" size="sm" asChild className="h-9 gap-2 rounded-full text-[13px]">
             <Link href="/orders">
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to orders
@@ -144,7 +144,7 @@ export default async function OrderDetailPage({
             </div>
             <table className="mt-3 w-full text-[13px]">
               <thead>
-                <tr className="border-b border-border text-[10.5px] uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
                   <th className="py-2 text-left font-medium">SKU</th>
                   <th className="py-2 text-left font-medium">Name</th>
                   <th className="py-2 text-right font-medium">Qty</th>
@@ -176,7 +176,7 @@ export default async function OrderDetailPage({
             <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Customer
             </div>
-            <dl className="mt-3 space-y-2 text-[12.5px]">
+            <dl className="mt-3 space-y-2 text-[13px]">
               <Row label="Name" value={customerName} />
               <Row label="Email" value={customer.email ?? '—'} />
               <Row label="Phone" value={customer.phone ?? '—'} />
@@ -185,10 +185,10 @@ export default async function OrderDetailPage({
             <div className="mt-5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Pushes
             </div>
-            <dl className="mt-3 space-y-2 text-[12.5px]">
-              <Row label="LS order ID" value={order.ls_order_id ?? '—'} mono />
+            <dl className="mt-3 space-y-2 text-[13px]">
+              <Row label="POS order ID" value={order.ls_order_id ?? '—'} mono />
               <Row
-                label="LS pushed"
+                label="POS pushed"
                 value={
                   order.ls_pushed_at
                     ? new Date(order.ls_pushed_at).toLocaleString('nl-BE')
@@ -196,12 +196,12 @@ export default async function OrderDetailPage({
                 }
               />
               <Row
-                label="Shipday ID"
+                label="Delivery ID"
                 value={order.shipday_order_id ?? '—'}
                 mono
               />
               <Row
-                label="Shipday pushed"
+                label="Delivery pushed"
                 value={
                   order.shipday_pushed_at
                     ? new Date(order.shipday_pushed_at).toLocaleString('nl-BE')
@@ -212,7 +212,7 @@ export default async function OrderDetailPage({
 
             {order.cancel_reason && (
               <div className="mt-5 rounded-xl border border-rose-500/30 bg-rose-500/5 p-3 text-[12px] text-rose-700 dark:text-rose-400">
-                <div className="text-[10.5px] uppercase tracking-wider">
+                <div className="text-[11px] uppercase tracking-wider">
                   Cancel reason
                 </div>
                 <div className="mt-1">{order.cancel_reason}</div>
@@ -228,7 +228,7 @@ export default async function OrderDetailPage({
             </div>
             <ol className="mt-4 space-y-3">
               {(history ?? []).length === 0 && (
-                <li className="text-[12.5px] text-muted-foreground">
+                <li className="text-[13px] text-muted-foreground">
                   No state history yet.
                 </li>
               )}
@@ -241,7 +241,7 @@ export default async function OrderDetailPage({
                   >
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-[12.5px]">
+                      <div className="flex items-center gap-2 text-[13px]">
                         {h.from_state && (
                           <>
                             <span className="font-mono text-muted-foreground">
@@ -252,19 +252,19 @@ export default async function OrderDetailPage({
                         )}
                         <span
                           className={cn(
-                            'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium',
                             STATE_TONE[h.to_state as OrderState]
                           )}
                         >
                           {STATE_LABEL[h.to_state as OrderState]}
                         </span>
                         {h.attempt > 0 && (
-                          <span className="text-[10.5px] text-muted-foreground">
+                          <span className="text-[11px] text-muted-foreground">
                             attempt {h.attempt}
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 text-[11.5px] text-muted-foreground">
+                      <div className="mt-1 text-[12px] text-muted-foreground">
                         {new Date(h.occurred_at).toLocaleString('nl-BE')}
                         {prev && (
                           <span className="ml-2 font-mono">
@@ -273,7 +273,7 @@ export default async function OrderDetailPage({
                         )}
                       </div>
                       {h.reason && (
-                        <div className="mt-1 text-[11.5px]">{h.reason}</div>
+                        <div className="mt-1 text-[12px]">{h.reason}</div>
                       )}
                     </div>
                   </li>
@@ -338,7 +338,7 @@ function Row({
       <dd
         className={cn(
           'text-right',
-          mono ? 'font-mono text-[11.5px] tabular-nums' : 'font-medium'
+          mono ? 'font-mono text-[12px] tabular-nums' : 'font-medium'
         )}
       >
         {value}

@@ -1,10 +1,8 @@
 import Link from 'next/link';
-import { Filter, RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/page-header';
-import { PipelineFlow } from '@/components/dashboard/pipeline-flow';
 import { Button } from '@/components/ui/button';
 import { LOCATIONS, STATE_LABEL, STATE_TONE, type LocationKey, type OrderState } from '@/lib/constants';
-import { getDashboardStats } from '@/lib/queries/dashboard';
 import { listOrders } from '@/lib/queries/orders';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +40,7 @@ export default async function OrdersPage({
   searchParams: Promise<{
     loc?: string;
     source?: 'shopify' | 'takeaway';
-    state?: OrderState;
+    state?: OrderState | 'in_flight';
     page?: string;
   }>;
 }) {
@@ -51,16 +49,13 @@ export default async function OrdersPage({
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
   const pageSize = 25;
 
-  const [{ rows, total, counts }, stats] = await Promise.all([
-    listOrders({
-      source: sp.source,
-      state: sp.state,
-      loc,
-      page,
-      pageSize,
-    }),
-    getDashboardStats(loc),
-  ]);
+  const { rows, total, counts } = await listOrders({
+    source: sp.source,
+    state: sp.state,
+    loc,
+    page,
+    pageSize,
+  });
 
   const baseQs = (extra: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
@@ -79,39 +74,26 @@ export default async function OrdersPage({
     { label: 'Takeaway', count: counts.takeaway, href: `/orders${baseQs({ source: 'takeaway' })}`, active: sp.source === 'takeaway' && !sp.state },
     { label: 'Failed', count: counts.failed, href: `/orders${baseQs({ state: 'ls_failed' })}`, active: sp.state === 'ls_failed', tone: 'rose' },
     { label: 'Rejected', count: counts.rejected, href: `/orders${baseQs({ state: 'ls_rejected' })}`, active: sp.state === 'ls_rejected', tone: 'rose' },
-    { label: 'In flight', count: counts.inFlight, href: `/orders${baseQs({ state: 'pushing_ls' })}`, active: (['received', 'normalized', 'pushing_ls', 'ls_sent'] as string[]).includes(sp.state ?? ''), tone: 'amber' },
+    { label: 'In flight', count: counts.inFlight, href: `/orders${baseQs({ state: 'in_flight' })}`, active: sp.state === 'in_flight', tone: 'amber' },
   ];
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <PageHeader
         eyebrow="Orders"
         title="Live order stream"
-        description="Every Shopify webhook, normalized and tracked through the state machine. Click any reference to inspect its raw payload and full audit trail."
+        description="All orders from receipt to delivery. Click any reference to inspect its payload and audit trail."
         actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 rounded-full text-[12.5px] bg-transparent"
-              disabled
-            >
-              <Filter className="h-3.5 w-3.5" />
-              Filter
-            </Button>
-            <Button size="sm" asChild className="h-9 gap-2 rounded-full text-[12.5px]">
-              <Link href={`/orders${baseQs({})}`}>
-                <RefreshCw className="h-3.5 w-3.5" />
-                Refresh
-              </Link>
-            </Button>
-          </>
+          <Button size="sm" asChild className="h-9 gap-2 rounded-full text-[13px]">
+            <Link href={`/orders${baseQs({})}`}>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Link>
+          </Button>
         }
       />
-
-      <PipelineFlow counts={stats.pipelineCounts} />
 
       <div className="flex flex-wrap items-center gap-2">
         {chips.map((c) => (
@@ -129,11 +111,18 @@ export default async function OrdersPage({
             }
           >
             {c.label}
-            <span className="rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] tabular-nums opacity-70">
+            <span className="rounded-full bg-current/10 px-1.5 py-0.5 text-[11px] tabular-nums opacity-70">
               {c.count.toLocaleString('nl-BE')}
             </span>
           </Link>
         ))}
+        <Link
+          href="/pipeline"
+          className="inline-flex h-8 items-center gap-1 px-2 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Pipeline
+          <ArrowRight className="h-3 w-3" />
+        </Link>
       </div>
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
@@ -170,13 +159,13 @@ export default async function OrdersPage({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-border bg-muted/30 text-[10.5px] uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border bg-muted/30 text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-5 py-2.5 text-left font-medium">Reference</th>
                 <th className="px-3 py-2.5 text-left font-medium">Channel</th>
                 <th className="px-3 py-2.5 text-left font-medium">Location</th>
                 <th className="px-3 py-2.5 text-right font-medium">Total</th>
                 <th className="px-3 py-2.5 text-left font-medium">State</th>
-                <th className="px-3 py-2.5 text-left font-medium">LS / Shipday</th>
+                <th className="px-3 py-2.5 text-left font-medium">POS / Delivery</th>
                 <th className="px-5 py-2.5 text-right font-medium">Created</th>
               </tr>
             </thead>
@@ -185,21 +174,36 @@ export default async function OrdersPage({
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-12 text-center text-[12px] text-muted-foreground"
+                    className="px-5 py-16 text-center"
                   >
-                    No orders match the current filter.
+                    <div className="text-[13px] font-medium text-foreground">
+                      No orders found
+                    </div>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      {isAll
+                        ? 'Orders will appear here once the pipeline receives them.'
+                        : 'Try broadening your search or removing filters.'}
+                    </p>
+                    {!isAll && (
+                      <Link
+                        href={`/orders${loc ? `?loc=${loc}` : ''}`}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/20"
+                      >
+                        Clear all filters
+                      </Link>
+                    )}
                   </td>
                 </tr>
               )}
               {rows.map((o) => (
                 <tr
                   key={o.external_ref}
-                  className="border-b border-border/60 last:border-b-0 hover:bg-muted/30"
+                  className="relative border-b border-border/60 last:border-b-0 cursor-pointer hover:bg-muted/30 transition-colors"
                 >
                   <td className="px-5 py-3 font-mono text-[12px]">
                     <Link
                       href={`/orders/${encodeURIComponent(o.external_ref)}`}
-                      className="hover:underline"
+                      className="hover:underline after:absolute after:inset-0"
                     >
                       {o.external_ref}
                     </Link>
@@ -207,7 +211,7 @@ export default async function OrdersPage({
                   <td className="px-3 py-3">
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
+                        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-medium',
                         o.source === 'shopify'
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                           : 'bg-orange-500/10 text-orange-700 dark:text-orange-400'
@@ -229,18 +233,18 @@ export default async function OrdersPage({
                   <td className="px-3 py-3">
                     <span
                       className={cn(
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium',
                         STATE_TONE[o.status]
                       )}
                     >
                       {STATE_LABEL[o.status]}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-[11px] tabular-nums text-muted-foreground">
-                    <div>{o.ls_order_id ? `LS ${o.ls_order_id.slice(-8)}` : '—'}</div>
-                    <div>{o.shipday_order_id ? `SD ${o.shipday_order_id.slice(-8)}` : '—'}</div>
+                  <td className="px-3 py-3 text-[12px] tabular-nums text-muted-foreground">
+                    <div>{o.ls_order_id ? `POS ${o.ls_order_id.slice(-8)}` : '—'}</div>
+                    <div>{o.shipday_order_id ? `Delivery ${o.shipday_order_id.slice(-8)}` : '—'}</div>
                   </td>
-                  <td className="px-5 py-3 text-right text-[11.5px] tabular-nums text-muted-foreground">
+                  <td className="px-5 py-3 text-right text-[12px] tabular-nums text-muted-foreground">
                     {timeAgo(o.created_at)}
                   </td>
                 </tr>

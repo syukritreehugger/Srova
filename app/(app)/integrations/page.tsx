@@ -29,7 +29,7 @@ export default function IntegrationsPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="Integration cards saat ini pakai data hardcoded di lib/data.ts. Versi live (Shopify HMAC, LS token, Shipday push) sudah ada di widget IntegrationHealth pada halaman /. Page ini akan diganti dengan query nyata setelah scope Phase-1 tutup."
+        reason="These cards show sample data. For real-time integration status, check the Integration Health widget on the home page."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

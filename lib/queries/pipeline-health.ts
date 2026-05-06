@@ -27,6 +27,33 @@ const CRITICAL_AGE_SEC = 1800; // 30 minutes
  * Surfaces depth + oldest message age so a banner can flag head-of-line blocking
  * (the same failure mode that hid the k6 pollution incident for 4 days on 2026-05-01).
  */
+export interface RetryLadderStats {
+  live: Record<string, number>;
+  history_24h: Record<string, number>;
+  dlq_depth: number;
+}
+
+export async function getRetryLadderStats(
+  loc?: string
+): Promise<RetryLadderStats> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc('retry_ladder_stats', {
+    p_location_key: loc ?? null,
+  });
+
+  if (error || !data) {
+    return { live: {}, history_24h: {}, dlq_depth: 0 };
+  }
+
+  const result = data as RetryLadderStats;
+  return {
+    live: result.live ?? {},
+    history_24h: result.history_24h ?? {},
+    dlq_depth: result.dlq_depth ?? 0,
+  };
+}
+
 export async function getPipelineBacklog(): Promise<PipelineBacklog> {
   const supabase = await createClient();
 

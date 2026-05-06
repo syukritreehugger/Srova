@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getWorkflow } from '@/lib/n8n';
 
 export type IntegrationStatus =
   | 'operational'
@@ -11,7 +12,6 @@ export interface IntegrationRow {
   name: string;
   description: string;
   status: IntegrationStatus;
-  uptime: number;
   lastEvent: string;
 }
 
@@ -23,6 +23,15 @@ export interface MenuSyncRow {
   status: 'auto' | 'manual' | 'down';
 }
 
+const SHOPIFY_WEBHOOK_IDS = [
+  '2ESmow3WjbgLZVdN', // shopify_webhook_order_updated
+  'F1ISBeZxtNJ8DBc4', // shopify_webhook_order_cancelled
+  '8DzRy1GjkwvDDrnh', // shopify_webhook_refund_create
+];
+
+const LS_PUSHER_ID = '2ENsv7R4I8H5L3cf'; // push_lightspeed_order
+const LS_POLLER_ID = '0i4SS4CHZo1h2Poj'; // poller_q_orders_normalize
+
 export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
   if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
     return [];
@@ -31,83 +40,88 @@ export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  const [hmacFails, lsTokens, recentPushed] = await Promise.all([
-    supabase
-      .from('raw_orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('hmac_valid', false)
-      .gte('received_at', since24h),
-    supabase
-      .from('ls_tokens')
-      .select('location_key, expires_at, updated_at'),
-    supabase
-      .from('canonical_orders')
-      .select('source, shipday_pushed_at, ls_pushed_at')
-      .gte('created_at', since24h)
-      .limit(200),
-  ]);
+  const [hmacFails, lsTokens, shopifyWfs, lsPusherWf, lsPollerWf] =
+    await Promise.all([
+      supabase
+        .from('raw_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('hmac_valid', false)
+        .gte('received_at', since24h),
+      supabase
+        .from('ls_tokens')
+        .select('location_key, expires_at, updated_at'),
+      Promise.all(SHOPIFY_WEBHOOK_IDS.map((id) => getWorkflow(id))),
+      getWorkflow(LS_PUSHER_ID),
+      getWorkflow(LS_POLLER_ID),
+    ]);
 
+  // ── Shopify ──
   const hmacBad = hmacFails.count ?? 0;
+  const shopifyActive = shopifyWfs.filter((r) => r.ok && r.data.active).length;
+  const shopifyTotal = SHOPIFY_WEBHOOK_IDS.length;
+
+  let shopifyStatus: IntegrationStatus = 'operational';
+  if (hmacBad >= 5) shopifyStatus = 'down';
+  else if (hmacBad > 0 || shopifyActive < shopifyTotal) shopifyStatus = 'degraded';
+
+  const shopifyDesc =
+    shopifyActive === shopifyTotal
+      ? `${shopifyTotal} webhook handlers active`
+      : `${shopifyActive}/${shopifyTotal} handlers active`;
+
+  let shopifyEvent = 'all clear 24h';
+  if (hmacBad > 0) shopifyEvent = `${hmacBad} HMAC failures`;
+  else if (shopifyActive < shopifyTotal)
+    shopifyEvent = `${shopifyTotal - shopifyActive} handler(s) paused`;
+
+  // ── Lightspeed ──
   const tokens = (lsTokens.data ?? []) as Array<{
     location_key: string;
     expires_at: string | null;
     updated_at: string | null;
   }>;
 
-  function tokenStatus(): IntegrationStatus {
-    if (tokens.length === 0) return 'down';
-    const now = Date.now();
-    const expired = tokens.some(
-      (t) => t.expires_at && new Date(t.expires_at).getTime() < now
-    );
-    return expired ? 'degraded' : 'operational';
+  const now = Date.now();
+  const validTokens = tokens.filter(
+    (t) => t.expires_at && new Date(t.expires_at).getTime() > now,
+  ).length;
+
+  const pusherActive = lsPusherWf.ok && lsPusherWf.data.active;
+  const pollerActive = lsPollerWf.ok && lsPollerWf.data.active;
+
+  let lsStatus: IntegrationStatus = 'operational';
+  if (tokens.length === 0) lsStatus = 'down';
+  else if (validTokens < tokens.length) lsStatus = 'degraded';
+  if (!pusherActive || !pollerActive) {
+    lsStatus = lsStatus === 'down' ? 'down' : 'degraded';
   }
 
-  const orders = (recentPushed.data ?? []) as Array<{
-    source: string;
-    shipday_pushed_at: string | null;
-    ls_pushed_at: string | null;
-  }>;
-  const shipdayOk = orders.some((o) => o.shipday_pushed_at);
-  const lsOk = orders.some((o) => o.ls_pushed_at);
+  const workflowNote = pusherActive && pollerActive
+    ? 'workflows active'
+    : !pusherActive && !pollerActive
+      ? 'workflows paused'
+      : 'partial workflows paused';
 
-  const last = (key: 'shipday_pushed_at' | 'ls_pushed_at') => {
-    const t = orders
-      .map((o) => o[key])
-      .filter((v): v is string => Boolean(v))
-      .map((v) => new Date(v).getTime())
-      .sort((a, b) => b - a)[0];
-    if (!t) return 'no recent push';
-    const min = Math.round((Date.now() - t) / 60000);
-    return min < 60 ? `${min}m ago` : `${Math.round(min / 60)}h ago`;
-  };
+  const lsDesc = `${validTokens}/${tokens.length} tokens valid · ${workflowNote}`;
+
+  let lsEvent = 'all clear';
+  if (!pusherActive || !pollerActive) lsEvent = 'pipeline paused';
+  else if (validTokens < tokens.length) lsEvent = 'token(s) expired';
 
   return [
     {
       id: 'shopify',
       name: 'Shopify webhooks',
-      description: '3 stores · orders/create',
-      status:
-        hmacBad === 0 ? 'operational' : hmacBad < 5 ? 'degraded' : 'down',
-      uptime: hmacBad === 0 ? 100 : Math.max(0, 100 - hmacBad * 2),
-      lastEvent:
-        hmacBad === 0 ? 'no HMAC failures 24h' : `${hmacBad} HMAC failures`,
+      description: shopifyDesc,
+      status: shopifyStatus,
+      lastEvent: shopifyEvent,
     },
     {
       id: 'lightspeed',
       name: 'Lightspeed L-Series',
-      description: `OAuth tokens · ${tokens.length}/3 locations`,
-      status: tokenStatus(),
-      uptime: tokenStatus() === 'operational' ? 100 : 95,
-      lastEvent: lsOk ? last('ls_pushed_at') : 'no pushes 24h',
-    },
-    {
-      id: 'shipday',
-      name: 'Shipday dispatch',
-      description: 'Driver routing · 3 restaurants',
-      status: shipdayOk ? 'operational' : 'investigating',
-      uptime: shipdayOk ? 100 : 98,
-      lastEvent: shipdayOk ? last('shipday_pushed_at') : 'no pushes 24h',
+      description: lsDesc,
+      status: lsStatus,
+      lastEvent: lsEvent,
     },
   ];
 }

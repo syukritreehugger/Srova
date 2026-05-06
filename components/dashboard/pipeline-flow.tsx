@@ -30,21 +30,12 @@ export function PipelineFlow({
       <div className="flex items-start justify-between">
         <div>
           <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Order pipeline · live
+            Order pipeline
           </div>
           <div className="mt-1 text-[14px] font-medium">
             <span className="tabular-nums">{totalActive}</span>{" "}
             <span className="text-muted-foreground">orders in flight</span>
           </div>
-        </div>
-        <div className="flex gap-1.5">
-          <span className="inline-flex h-6 items-center rounded-full bg-emerald-500/10 px-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-            <span className="relative mr-1.5 flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
-            Streaming
-          </span>
         </div>
       </div>
 
@@ -69,10 +60,7 @@ export function PipelineFlow({
                     {STATE_LABEL[state]}
                   </span>
                   {count > 0 && state !== "complete" && (
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-60" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    </span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                   )}
                 </div>
                 <div className="mt-2 text-[22px] font-semibold leading-none tracking-tight tabular-nums">

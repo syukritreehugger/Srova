@@ -38,7 +38,7 @@ export default function MappingsPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="The product_mapping + modifier_mapping tables (RFC-007 / F44) are pending migration. Phase 1 Shopify→LS push currently uses inline PLU mapping in the n8n workflow. UI CRUD lands once the tables are migrated and the n8n flow reads them as the source of truth."
+        reason="Product mappings shown here are sample data. The actual PLU mappings currently live inside the order pipeline. This page will become editable once the mapping database is ready."
       />
 
       <div className="grid grid-cols-3 gap-3">

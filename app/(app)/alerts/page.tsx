@@ -1,6 +1,7 @@
 import { AlertsFeed } from "@/components/dashboard/alerts-feed"
 import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
+import { type LocationKey } from "@/lib/constants"
 import { getRecentAlerts } from "@/lib/queries/alerts"
 
 const RULES = [
@@ -54,22 +55,28 @@ const RULES = [
   },
 ]
 
-export default async function AlertsPage() {
-  const alerts = await getRecentAlerts(30)
+export default async function AlertsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ loc?: string }>;
+}) {
+  const { loc: rawLoc } = await searchParams;
+  const loc = (rawLoc as LocationKey | undefined) ?? undefined;
+  const alerts = await getRecentAlerts(30, loc)
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Subsystem 7 · Monitoring"
-        title="Alerts & DLQ"
-        description="The watchdog. Every critical signal — failed pushes, expired sessions, missing PLUs — surfaces here and routes to Slack within seconds."
+        title="Alerts"
+        description="Failed pushes, expired sessions, missing PLUs — routed to Slack within seconds."
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <AlertsFeed alerts={alerts} />
+          <AlertsFeed alerts={alerts} showViewAll={false} />
         </div>
-        <div className="card-elevated rounded-2xl border border-border bg-card">
+        <div className="card-elevated sticky top-24 rounded-2xl border border-border bg-card">
           <div className="border-b border-border px-5 py-4">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

@@ -66,7 +66,7 @@ export default async function SettingsPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="Secret rotation, RBAC, dan feature-flag controls penuh land bersama CASL (T-29). Untuk Phase 1 hanya pipeline toggle yang aktif."
+        reason="Secret management and access controls are coming later. For now, only the pipeline toggle above is active."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">

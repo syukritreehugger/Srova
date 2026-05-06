@@ -26,13 +26,13 @@ export type OrderState = typeof ORDER_STATES[number];
 
 export const STATE_LABEL: Record<OrderState, string> = {
   received: 'Received',
-  normalized: 'Normalized',
-  pushing_ls: 'Pushing LS',
-  ls_sent: 'LS Sent',
-  ls_accepted: 'LS Accepted',
-  ls_rejected: 'LS Rejected',
-  ls_failed: 'LS Failed',
-  shipday_sent: 'Shipday Sent',
+  normalized: 'Processing',
+  pushing_ls: 'Sending to POS',
+  ls_sent: 'Sent to POS',
+  ls_accepted: 'POS accepted',
+  ls_rejected: 'POS rejected',
+  ls_failed: 'POS failed',
+  shipday_sent: 'Dispatched',
   complete: 'Complete',
   cancelled: 'Cancelled',
 };

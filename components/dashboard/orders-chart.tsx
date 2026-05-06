@@ -25,7 +25,7 @@ export function OrdersChart({ data }: { data: HourlyOrders[] }) {
           </div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-[28px] font-semibold leading-none tracking-tight tabular-nums">
-              {total.toLocaleString("nl-BE")}
+              {total.toLocaleString("en-GB")}
             </span>
             <span className="text-[12px] text-muted-foreground">orders</span>
           </div>

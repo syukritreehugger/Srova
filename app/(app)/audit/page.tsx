@@ -12,7 +12,7 @@ export default function AuditPage() {
 
       <OnDevBadge
         variant="banner"
-        reason="The audit_log table is scheduled for a follow-up migration. For Phase 1, all operator actions on /alerts are written to a temporary console log; full DB-backed audit ships after RFC-009."
+        reason="The audit log is still being set up. Once ready, every operator action (retries, edits, toggles) will be tracked here automatically."
       />
 
       <div className="card-elevated rounded-2xl border border-dashed border-border bg-card p-10 text-center">

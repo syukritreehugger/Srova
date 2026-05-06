@@ -12,9 +12,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { LOCATIONS, type LocationKey } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
-export function LocationSwitcher() {
+const LOC_AWARE_PATHS = ["/", "/orders", "/pipeline", "/alerts", "/locations", "/snooze", "/restaurant-status", "/opening-times"]
+
+function isLocAware(pathname: string): boolean {
+  return LOC_AWARE_PATHS.some((p) => p === "/" ? pathname === "/" : pathname === p || pathname.startsWith(`${p}/`))
+}
+
+type HealthTone = "healthy" | "degraded" | "critical"
+
+const DOT_STYLE: Record<HealthTone, string> = {
+  healthy: "bg-emerald-500",
+  degraded: "bg-amber-500",
+  critical: "bg-rose-500",
+}
+
+export function LocationSwitcher({ healthTone = "healthy" }: { healthTone?: HealthTone }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -22,6 +42,7 @@ export function LocationSwitcher() {
 
   const current = params.get("loc") as LocationKey | null
   const currentLoc = LOCATIONS.find((l) => l.key === current) ?? null
+  const aware = isLocAware(pathname)
 
   function pick(key: LocationKey | null) {
     const next = new URLSearchParams(params)
@@ -33,26 +54,58 @@ export function LocationSwitcher() {
     })
   }
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={pending}
-          className="h-9 gap-2 rounded-full border-border bg-card pl-3 pr-2 text-[13px] font-medium shadow-sm"
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          </span>
-          {currentLoc ? currentLoc.name : "All locations"}
+  const buttonContent = (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pending || !aware}
+      className={cn(
+        "h-9 gap-2 rounded-full border-border bg-card pl-3 pr-2 text-[13px] font-medium shadow-sm",
+        !aware && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        {aware ? (
+          <>
+            <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", DOT_STYLE[healthTone])} />
+            <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", DOT_STYLE[healthTone])} />
+          </>
+        ) : (
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+        )}
+      </span>
+      {!aware
+        ? "No filter available"
+        : currentLoc ? currentLoc.name : "All locations"}
+      {aware && (
+        <>
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground tabular-nums">
             {currentLoc ? "1" : LOCATIONS.length}
           </span>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
+        </>
+      )}
+      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+    </Button>
+  )
+
+  if (!aware) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {buttonContent}
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Location filter not available on this page
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {buttonContent}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64 rounded-xl">
         <DropdownMenuLabel className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -63,6 +116,9 @@ export function LocationSwitcher() {
           onSelect={() => pick(null)}
         >
           All locations
+          {!current && (
+            <span className="ml-auto h-2 w-2 rounded-full bg-emerald-500" />
+          )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         {LOCATIONS.map((loc) => (

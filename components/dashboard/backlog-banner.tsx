@@ -21,11 +21,11 @@ export function BacklogBanner({
         <div className="flex items-center gap-3">
           <Pause className="h-4 w-4 shrink-0" strokeWidth={2.5} />
           <div>
-            <div className="text-[12.5px] font-semibold">Pipeline di-pause</div>
+            <div className="text-[12.5px] font-semibold">Pipeline paused</div>
             <div className="mt-0.5 text-[11.5px] text-amber-700/90 dark:text-amber-400/80">
-              Frituur OS tidak push ke Lightspeed. Webhook Shopify tetap masuk
-              dan tersimpan, tapi tidak diteruskan ke POS sampai operator
-              re-aktifkan.
+              Frituur OS is not pushing to Lightspeed. Shopify webhooks are
+              still received and stored, but not forwarded to POS until an
+              operator re-activates the pipeline.
             </div>
           </div>
         </div>
