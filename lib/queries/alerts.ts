@@ -28,6 +28,7 @@ const STAGE_LABELS: Record<string, string> = {
   q_orders_poll_ls: 'Poll Lightspeed',
   q_orders_push_shipday: 'Push to Shipday',
   q_orders_compensate: 'Compensation',
+  ls_token_expiry: 'LS token refresh',
 };
 
 function humanStage(raw: string): string {
