@@ -75,7 +75,13 @@ Phase B (PLU pre-validation, live since 2026-05-12): Inserted between `Load dim_
 - `IF PLU Valid` → TRUE: continue to `Load LS Token` (normal flow) | FALSE: `DLQ: PLU Mismatch`
 - `DLQ: PLU Mismatch` — transitions order `normalized → pushing_ls → ls_failed`, inserts `dlq_alerts` with `code: 11401`, deletes queue message (no auto-retry — PLU mismatch requires manual fix at `/menu`)
 
-**Fixing notes for DLQ node SQL:** uses `pgmq_delete_order()` wrapper (not `pgmq.delete()` directly — permission denied). `dlq_alerts.msg_id` is NOT NULL — must be included. `canonical_orders` schema_version must be `"1.1"`, payment needs `status` + `currency: "EUR"`, vat_lines needs ≥1 entry.
+**Fixing notes for DLQ node SQL:** uses `pgmq_delete_order()` wrapper (not `pgmq.delete()` directly — permission denied). `dlq_alerts.msg_id` is NOT NULL — must be included. `canonical_orders` schema_version must be `"1.1"`, payment needs `status` + `currency: "EUR"`, `method` must be enum (`card_online`/`cash`/`bancontact`/`voucher`/`other`), vat_lines needs ≥1 entry.
+
+**Phase C (webhook deduplication, live since 2026-05-12):** `canonical_orders_unique_active_idx` UNIQUE partial index on `(source, external_ref, location_key) WHERE status != 'cancelled'`. `shopify_normalize_to_canonical` (`OdYCsotEru63kxN7`) UPSERT upgrades `INSERT … DO NOTHING` to full `ON CONFLICT … DO UPDATE` — second webhooks update items/payment/vat_lines/customer instead of being silently dropped. `(xmax = 0) AS was_inserted` flag skips re-enqueueing for duplicates.
+
+**Phase D1 (token expiry monitoring, live since 2026-05-12):** `monitor_token_expiry` workflow (`PYJ5HqtZErvCR95V`) — ScheduleTrigger 15min → queries `ls_tokens` where `expires_at < NOW() + 30min` → classifies `critical` (<10min) or `warning` (<30min) → dedup check (no alert in last 2h) → inserts `dlq_alerts` with `queue_name: 'ls_token_expiry'`, `msg_id: 0` (sentinel, no real queue msg). Stage label `ls_token_expiry` → "LS token refresh" in dashboard.
+
+**Phase D2 (stuck order auto-retry, live since 2026-05-12):** `monitor_stuck_orders` workflow (`YIjqWVqCnUg6Az7X`) — ScheduleTrigger 5min → queries orders stuck in `pushing_ls`/`ls_sent` for >10min → batches 1-by-1 → IF `retry_count < 3`: increment counter in `cancel_reason` JSONB + `pgmq_send_order()` re-enqueue → ELSE: `dlq_alerts` with `code: STUCK_RETRY_LIMIT`. Reads retry count via `(cancel_reason::jsonb->>'auto_retry_count')::int`. Re-enqueue uses `pgmq_send_order()` wrapper (not `pgmq.send()` directly).
 
 ## Design Context
 
