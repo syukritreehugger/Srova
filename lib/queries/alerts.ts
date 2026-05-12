@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { humanStage, readError, classify } from './alerts.helpers';
 
 export type AlertSeverity = 'critical' | 'warning' | 'info';
 
@@ -13,36 +14,6 @@ export interface AlertRow {
   created_at: string;
   resolved_at: string | null;
   attempt_count: number;
-}
-
-interface ErrorJson {
-  message?: string;
-  stage?: string;
-  code?: string;
-  runbook?: string;
-}
-
-const STAGE_LABELS: Record<string, string> = {
-  q_orders_normalize: 'Normalize order',
-  q_orders_push_ls: 'Push to Lightspeed',
-  q_orders_poll_ls: 'Poll Lightspeed',
-  q_orders_push_shipday: 'Push to Shipday',
-  q_orders_compensate: 'Compensation',
-  ls_token_expiry: 'LS token refresh',
-};
-
-function humanStage(raw: string): string {
-  return STAGE_LABELS[raw.toLowerCase()] ?? raw;
-}
-
-function readError(j: unknown): ErrorJson {
-  return j && typeof j === 'object' ? (j as ErrorJson) : {};
-}
-
-function classify(attempt: number, resolved: string | null): AlertSeverity {
-  if (resolved) return 'info';
-  if (attempt >= 5) return 'critical';
-  return 'warning';
 }
 
 export async function getRecentAlerts(limit = 20, loc?: string): Promise<AlertRow[]> {
