@@ -77,8 +77,8 @@ export function PipelineToggle({
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {active
-                ? 'Frituur OS memproses webhook Shopify dan push ke Lightspeed.'
-                : 'Webhook Shopify tetap masuk dan tersimpan, tapi tidak diteruskan ke Lightspeed.'}
+                ? 'Frituur OS memproses webhook Shopify (normalize + push) ke Lightspeed.'
+                : 'Webhook Shopify tetap masuk dan tersimpan, tapi normalize + push ke Lightspeed di-pause.'}
             </div>
           </div>
         </div>
