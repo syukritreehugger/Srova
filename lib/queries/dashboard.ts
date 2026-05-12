@@ -146,11 +146,12 @@ export async function getDashboardStats(
     dlqRes,
     liveRes,
   ] = await Promise.all([
-    withLoc(supabase.from('canonical_orders').select('status, location_key')),
+    withLoc(supabase.from('canonical_orders').select('status, location_key').neq('status', 'cancelled')),
     withLoc(
       supabase
         .from('canonical_orders')
         .select('source, status, created_at, payment, location_key')
+        .neq('status', 'cancelled')
         .gte('created_at', since24h)
     ),
     withLoc(
@@ -163,12 +164,14 @@ export async function getDashboardStats(
       supabase
         .from('canonical_orders')
         .select('status, location_key')
+        .neq('status', 'cancelled')
         .gte('created_at', since7d)
     ),
     withLoc(
       supabase
         .from('canonical_orders')
         .select('status, location_key')
+        .neq('status', 'cancelled')
         .gte('created_at', since30d)
     ),
     supabase
@@ -179,6 +182,7 @@ export async function getDashboardStats(
       supabase
         .from('canonical_orders')
         .select('external_ref, source, location_key, status, payment, created_at')
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
         .limit(8)
     ),

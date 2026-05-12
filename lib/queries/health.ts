@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { getWorkflow } from '@/lib/n8n';
+import { getWorkflow, LS_PUSHER_ID } from '@/lib/n8n';
 
 export type IntegrationStatus =
   | 'operational'
@@ -29,7 +29,7 @@ const SHOPIFY_WEBHOOK_IDS = [
   '8DzRy1GjkwvDDrnh', // shopify_webhook_refund_create
 ];
 
-const LS_PUSHER_ID = '2ENsv7R4I8H5L3cf'; // push_lightspeed_order
+
 const LS_POLLER_ID = '0i4SS4CHZo1h2Poj'; // poller_q_orders_normalize
 
 export async function getIntegrationHealth(): Promise<IntegrationRow[]> {

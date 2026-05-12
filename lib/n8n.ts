@@ -12,6 +12,7 @@
  */
 
 export const POLLER_NORMALIZE_ID = '0i4SS4CHZo1h2Poj';
+export const LS_PUSHER_ID = '2ENsv7R4I8H5L3cf';
 
 export interface N8nWorkflowSummary {
   id: string;

@@ -9,10 +9,9 @@ const HEALTHY: OrderState[] = [
   "pushing_ls",
   "ls_sent",
   "ls_accepted",
-  "shipday_sent",
-  "complete",
 ]
-const FAILED: OrderState[] = ["ls_rejected", "ls_failed", "cancelled"]
+const FAILED: OrderState[] = ["ls_rejected", "ls_failed"]
+const TERMINAL: OrderState[] = ["ls_accepted"]
 
 export function PipelineFlow({
   counts,
@@ -20,10 +19,9 @@ export function PipelineFlow({
   counts: Partial<Record<OrderState, number>>
 }) {
   const get = (s: OrderState) => counts[s] ?? 0
-  const totalActive = ORDER_STATES.filter((s) => s !== "complete").reduce(
-    (acc, s) => acc + get(s),
-    0,
-  )
+  const totalActive = ORDER_STATES
+    .filter((s) => !TERMINAL.includes(s) && s !== "complete" && s !== "shipday_sent" && s !== "cancelled")
+    .reduce((acc, s) => acc + get(s), 0)
 
   return (
     <div className="card-elevated rounded-2xl border border-border bg-card p-5">
@@ -52,14 +50,14 @@ export function PipelineFlow({
                 href={`/orders?state=${state}`}
                 className={cn(
                   "flex flex-1 flex-col rounded-xl border border-border bg-background p-3 transition-colors hover:border-foreground/20",
-                  state === "complete" && "border-emerald-500/30 bg-emerald-500/5",
+                  state === "ls_accepted" && "border-emerald-500/30 bg-emerald-500/5",
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
                     {STATE_LABEL[state]}
                   </span>
-                  {count > 0 && state !== "complete" && (
+                  {count > 0 && state !== "ls_accepted" && (
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                   )}
                 </div>
@@ -76,7 +74,7 @@ export function PipelineFlow({
       </div>
 
       {/* Failure lanes */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {FAILED.map((state) => {
           const count = get(state)
           return (

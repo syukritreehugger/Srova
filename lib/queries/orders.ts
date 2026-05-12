@@ -61,6 +61,8 @@ export async function listOrders(
     q = q.in('status', [...IN_FLIGHT]);
   } else if (params.state) {
     q = q.eq('status', params.state);
+  } else {
+    q = q.neq('status', 'cancelled');
   }
   if (params.loc) q = q.eq('location_key', params.loc);
 
@@ -69,6 +71,7 @@ export async function listOrders(
     supabase
       .from('canonical_orders')
       .select('source, status, location_key')
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(1000),
   ]);

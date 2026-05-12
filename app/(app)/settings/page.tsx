@@ -2,7 +2,7 @@ import { Check, GitBranch, Lock } from "lucide-react"
 import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
-import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID } from "@/lib/n8n"
+import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID } from "@/lib/n8n"
 import { PipelineToggle } from "./_components/pipeline-toggle"
 
 const SECRETS = [
@@ -19,12 +19,16 @@ const SECRETS = [
 
 export default async function SettingsPage() {
   const configured = isN8nConfigured()
-  let pollerActive = false
-  let pollerError: string | null = null
+  let pipelineActive = false
+  let pipelineError: string | null = null
   if (configured) {
-    const r = await getWorkflow(POLLER_NORMALIZE_ID)
-    if (r.ok) pollerActive = r.data.active
-    else pollerError = r.error
+    const [pollerRes, pusherRes] = await Promise.all([
+      getWorkflow(POLLER_NORMALIZE_ID),
+      getWorkflow(LS_PUSHER_ID),
+    ])
+    if (!pollerRes.ok) pipelineError = `Poller: ${pollerRes.error}`
+    else if (!pusherRes.ok) pipelineError = `Pusher: ${pusherRes.error}`
+    else pipelineActive = pollerRes.data.active && pusherRes.data.active
   }
 
   return (
@@ -49,17 +53,18 @@ export default async function SettingsPage() {
         </div>
         <div className="p-5">
           <PipelineToggle
-            initialActive={pollerActive}
+            initialActive={pipelineActive}
             configured={configured}
-            configError={pollerError}
+            configError={pipelineError}
           />
           <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-[11.5px] text-muted-foreground leading-relaxed">
             <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
-            tombol ini activate/deactivate workflow{' '}
-            <code className="font-mono text-[11px]">poller_q_orders_normalize</code> di n8n.
+            tombol ini activate/deactivate dua workflow sekaligus:{' '}
+            <code className="font-mono text-[11px]">poller_q_orders_normalize</code> dan{' '}
+            <code className="font-mono text-[11px]">push_lightspeed_order</code> di n8n.
             Webhook Shopify <em>tetap masuk</em> dan tersimpan di{' '}
             <code className="font-mono text-[11px]">raw_orders</code> apa pun statusnya — yang
-            di-pause cuma push ke POS Lightspeed.
+            di-pause adalah normalize + push ke POS Lightspeed.
           </div>
         </div>
       </div>
