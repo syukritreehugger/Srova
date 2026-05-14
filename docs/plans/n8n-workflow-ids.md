@@ -7,6 +7,18 @@
 | `takeaway_playwright_login` | **deferred** | See `takeaway-token-recovery.md` — CAPTCHA blocks automation. Manual recovery procedure documented. |
 | `monitor_token_expiry` (extended) | `PYJ5HqtZErvCR95V` | Existing LS workflow extended with parallel branch monitoring `takeaway_tokens.refresh_expires_at`. Alerts via `dlq_alerts` with `queue_name='takeaway_token_expiry'` when <7 days remain. |
 
+## Shipday push (Task 15 verification)
+
+**No dedicated Shipday push consumer workflow exists yet** as of 2026-05-15. The queue `q_orders_push_shipday` has accumulated 355 pending Shopify messages waiting for the consumer to be built.
+
+Our Takeaway poller enqueues the **same payload shape** as `shopify_normalize_to_canonical`:
+
+```json
+{ "canonical_id": "...", "source": "takeaway", "external_ref": "...", "location_key": "..." }
+```
+
+When the Shipday push consumer is built (out of scope), it should read from `q_orders_push_shipday` and call `canonical_orders` by id — entirely source-agnostic. No changes needed in this integration.
+
 ## Token refresh workflow logic
 
 ```
