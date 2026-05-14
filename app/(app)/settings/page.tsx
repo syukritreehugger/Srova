@@ -2,7 +2,7 @@ import { Check, GitBranch, Lock } from "lucide-react"
 import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
-import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID } from "@/lib/n8n"
+import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID, TAKEAWAY_POLLER_ID } from "@/lib/n8n"
 import { PipelineToggle } from "./_components/pipeline-toggle"
 
 const SECRETS = [
@@ -21,14 +21,17 @@ export default async function SettingsPage() {
   const configured = isN8nConfigured()
   let pipelineActive = false
   let pipelineError: string | null = null
+  let takeawayPollerActive: boolean | null = null
   if (configured) {
-    const [pollerRes, pusherRes] = await Promise.all([
+    const [pollerRes, pusherRes, takeawayRes] = await Promise.all([
       getWorkflow(POLLER_NORMALIZE_ID),
       getWorkflow(LS_PUSHER_ID),
+      getWorkflow(TAKEAWAY_POLLER_ID),
     ])
     if (!pollerRes.ok) pipelineError = `Poller: ${pollerRes.error}`
     else if (!pusherRes.ok) pipelineError = `Pusher: ${pusherRes.error}`
     else pipelineActive = pollerRes.data.active && pusherRes.data.active
+    takeawayPollerActive = takeawayRes.ok ? takeawayRes.data.active : null
   }
 
   return (
@@ -65,6 +68,27 @@ export default async function SettingsPage() {
             Webhook Shopify <em>tetap masuk</em> dan tersimpan di{' '}
             <code className="font-mono text-[11px]">raw_orders</code> apa pun statusnya — yang
             di-pause adalah normalize + push ke POS Lightspeed.
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-[12px]">
+            <div>
+              <span className="font-semibold text-foreground">Takeaway.com poller</span>
+              <span className="text-muted-foreground"> · ingests orders every 5 min</span>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                Independent from Shopify pipeline — has its own n8n workflow{' '}
+                <code className="font-mono text-[11px]">takeaway_poll_orders</code>.
+              </div>
+            </div>
+            <span
+              className={
+                takeawayPollerActive === null
+                  ? "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground"
+                  : takeawayPollerActive
+                  ? "inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:text-emerald-400"
+                  : "inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-[10.5px] font-medium text-rose-700 dark:text-rose-400"
+              }
+            >
+              {takeawayPollerActive === null ? "Unknown" : takeawayPollerActive ? "Active" : "Paused"}
+            </span>
           </div>
         </div>
       </div>
