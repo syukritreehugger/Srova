@@ -14,6 +14,12 @@ describe('humanStage', () => {
     expect(humanStage('ls_token_expiry')).toBe('LS token refresh');
   });
 
+  it('maps takeaway stage labels', () => {
+    expect(humanStage('takeaway_token_expiry')).toBe('Takeaway token refresh');
+    expect(humanStage('takeaway_poll_error')).toBe('Takeaway poll failure');
+    expect(humanStage('takeaway_plu_unmapped')).toBe('Takeaway PLU unmapped');
+  });
+
   it('is case-insensitive', () => {
     expect(humanStage('Q_ORDERS_PUSH_LS')).toBe('Push to Lightspeed');
     expect(humanStage('LS_TOKEN_EXPIRY')).toBe('LS token refresh');

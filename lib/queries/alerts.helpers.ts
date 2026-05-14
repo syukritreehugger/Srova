@@ -7,6 +7,9 @@ export const STAGE_LABELS: Record<string, string> = {
   q_orders_push_shipday: 'Push to Shipday',
   q_orders_compensate: 'Compensation',
   ls_token_expiry: 'LS token refresh',
+  takeaway_token_expiry: 'Takeaway token refresh',
+  takeaway_poll_error: 'Takeaway poll failure',
+  takeaway_plu_unmapped: 'Takeaway PLU unmapped',
 };
 
 export interface ErrorJson {
