@@ -283,6 +283,54 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['opening_times']['Insert']>;
         Relationships: [];
       };
+      takeaway_tokens: {
+        Row: {
+          id: number;
+          account_name: string;
+          location_key: string;
+          refresh_token: string;
+          access_token: string | null;
+          token_expires_at: string | null;
+          refresh_expires_at: string | null;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          account_name?: string;
+          location_key: string;
+          refresh_token: string;
+          access_token?: string | null;
+          token_expires_at?: string | null;
+          refresh_expires_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['takeaway_tokens']['Insert']>;
+        Relationships: [];
+      };
+      takeaway_plu_map: {
+        Row: {
+          id: number;
+          location_key: string;
+          takeaway_name: string;
+          takeaway_name_lower: string;
+          ls_plu: string | null;
+          ls_product_name: string | null;
+          auto_matched: boolean;
+          confirmed_by: string | null;
+          confirmed_at: string | null;
+          first_seen_at: string;
+          last_seen_at: string;
+          order_count: number;
+        };
+        Insert: {
+          location_key: string;
+          takeaway_name: string;
+          ls_plu?: string | null;
+          ls_product_name?: string | null;
+          auto_matched?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['takeaway_plu_map']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
