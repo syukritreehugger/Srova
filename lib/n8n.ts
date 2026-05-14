@@ -13,6 +13,8 @@
 
 export const POLLER_NORMALIZE_ID = '0i4SS4CHZo1h2Poj';
 export const LS_PUSHER_ID = '2ENsv7R4I8H5L3cf';
+export const TAKEAWAY_POLLER_ID = '86E91MXlXNDO5DA6';
+export const TAKEAWAY_TOKEN_REFRESH_ID = 'q1r0qcOalSrhzlrq';
 
 export interface N8nWorkflowSummary {
   id: string;
