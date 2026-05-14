@@ -3,8 +3,9 @@
 | Workflow | ID | Purpose |
 |----------|-----|---------|
 | `takeaway_refresh_access_token` | `q1r0qcOalSrhzlrq` | Sub-workflow called by poller. Returns valid access_token. Caches in `takeaway_tokens` with 30s pre-expiry buffer. |
-| `takeaway_poll_orders` | TBD (Task 7) | Schedule 90s. Polls Takeaway history → normalizes → enqueues to `q_orders_push_ls`. |
-| `takeaway_playwright_login` | TBD (Task 8) | Weekly fallback for refresh_token renewal via headless browser login. |
+| `takeaway_poll_orders` | `86E91MXlXNDO5DA6` | Schedule 5min (will move to 90s). Polls Takeaway history → normalizes → enqueues to `q_orders_push_ls` and `q_orders_push_shipday` (delivery). Auto-populates `takeaway_plu_map`. |
+| `takeaway_playwright_login` | **deferred** | See `takeaway-token-recovery.md` — CAPTCHA blocks automation. Manual recovery procedure documented. |
+| `monitor_token_expiry` (extended) | `PYJ5HqtZErvCR95V` | Existing LS workflow extended with parallel branch monitoring `takeaway_tokens.refresh_expires_at`. Alerts via `dlq_alerts` with `queue_name='takeaway_token_expiry'` when <7 days remain. |
 
 ## Token refresh workflow logic
 
