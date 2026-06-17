@@ -261,15 +261,12 @@ export function MappingTable({
                     <td className="px-3 py-3">
                       {row.lightspeed ? (
                         <div className="flex flex-col">
-                          <span
-                            className={cn(
-                              "font-medium",
-                              row.mismatch_reasons.includes("name_differs") &&
-                                "text-rose-700 dark:text-rose-400"
-                            )}
-                          >
-                            {row.lightspeed.name}
-                          </span>
+                          <span className="font-medium">{row.lightspeed.name}</span>
+                          {row.mismatch_reasons.includes("name_differs") && (
+                            <span className="text-[10.5px] text-muted-foreground italic">
+                              receipt name differs from Shopify
+                            </span>
+                          )}
                           {!row.lightspeed.visible && (
                             <span className="text-[10.5px] text-muted-foreground">
                               hidden in POS
@@ -304,9 +301,9 @@ export function MappingTable({
                         {cfg.icon}
                         {cfg.label}
                       </span>
-                      {row.mismatch_reasons.length > 0 && (
+                      {row.mismatch_reasons.includes("price_differs") && (
                         <div className="mt-1 text-[10.5px] text-muted-foreground">
-                          {row.mismatch_reasons.join(", ")}
+                          price_differs
                         </div>
                       )}
                     </td>

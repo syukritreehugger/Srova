@@ -163,13 +163,17 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
         status = 'shopify_only';
       }
     } else if (lr) {
-      // Simple SKU — exact match required for both name and price.
+      // Simple SKU — LS catalog has matching PLU. Whether row is `matched` or `mismatch`
+      // depends ONLY on price: name differences are cosmetic (LS receipt prints LS-side
+      // product name; Shopify name only appears in audit payload). Push will always
+      // succeed when the PLU resolves. We still record `name_differs` as a soft
+      // informational reason so operators see catalog drift, but don't escalate status.
       const lsPrice = Number(lr.price ?? 0);
       if (pricesDiffer(sv.price, lsPrice)) mismatchReasons.push('price_differs');
       if (sv.product_title.trim().toLowerCase() !== lr.name.trim().toLowerCase()) {
         mismatchReasons.push('name_differs');
       }
-      status = mismatchReasons.length > 0 ? 'mismatch' : 'matched';
+      status = mismatchReasons.includes('price_differs') ? 'mismatch' : 'matched';
     } else {
       status = 'shopify_only';
     }

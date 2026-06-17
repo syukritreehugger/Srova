@@ -43,7 +43,7 @@ export function MappingStats({
       <Stat
         label="Mismatched"
         value={mismatch}
-        sub="same SKU, name/price differs"
+        sub="same SKU, price differs"
         tone={mismatch > 0 ? "rose" : "default"}
         icon={<AlertCircle className="h-4 w-4" />}
       />
