@@ -96,10 +96,10 @@ export default async function SettingsPage() {
           <Truck className="h-3.5 w-3.5 text-muted-foreground" />
           <div>
             <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Shipday dispatch · canonical_orders → Shipday API
+              Shipday dispatch · Takeaway → Shipday driver
             </div>
             <div className="mt-0.5 text-[14px] font-medium">
-              Auto-assign driver untuk delivery orders
+              Auto-assign driver untuk Takeaway.com delivery
             </div>
           </div>
         </div>
@@ -113,13 +113,15 @@ export default async function SettingsPage() {
             <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
             tombol ini activate/deactivate workflow{' '}
             <code className="font-mono text-[11px]">push_shipday_order</code>.
-            Setiap canonical order dengan{' '}
+            Hanya order dengan{' '}
+            <code className="font-mono text-[11px]">source=&apos;takeaway&apos;</code>{' '}
+            +{' '}
             <code className="font-mono text-[11px]">order_type=&apos;delivery&apos;</code>{' '}
-            (Shopify + Takeaway) di-push ke Shipday lewat{' '}
-            <code className="font-mono text-[11px]">POST /orders</code> — driver bisa
-            di-assign auto/manual di Shipday dashboard. Per-store gating
-            (<code className="font-mono text-[11px]">dim_location.is_active</code>) tetap
-            berlaku — store paused tidak dispatch.
+            yang di-push ke Shipday lewat{' '}
+            <code className="font-mono text-[11px]">POST /orders</code>. Shopify delivery
+            TIDAK lewat Shipday (Shopify channel handle dispatch sendiri).
+            Per-store gating (<code className="font-mono text-[11px]">dim_location.is_active</code>)
+            + source filter — dua layer.
           </div>
         </div>
       </div>

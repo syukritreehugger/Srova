@@ -77,8 +77,8 @@ export function ShipdayToggle({
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {active
-                ? 'Order delivery (Shopify + Takeaway) auto-push ke Shipday → driver bisa di-assign.'
-                : 'Order delivery tidak di-dispatch ke Shipday. Operator harus assign driver manual via Shipday dashboard.'}
+                ? 'Order delivery dari Takeaway.com auto-push ke Shipday → driver bisa di-assign. Shopify delivery TIDAK pakai Shipday (channel handle sendiri).'
+                : 'Order delivery Takeaway tidak di-dispatch ke Shipday. Operator harus assign driver manual via Shipday dashboard.'}
             </div>
           </div>
         </div>
@@ -122,7 +122,8 @@ export function ShipdayToggle({
             <div className="flex-1">
               <div className="font-semibold">Aktifkan Shipday dispatch?</div>
               <div className="mt-1 text-[11.5px] opacity-90">
-                Setiap order delivery yang ter-normalize akan di-push ke Shipday.
+                Setiap order delivery <strong>dari Takeaway.com</strong> akan di-push
+                ke Shipday. Shopify delivery TIDAK lewat Shipday (channel sendiri).
                 Per-store gating (dim_location.is_active) tetap berlaku — store
                 paused tidak akan dispatch ke Shipday.
               </div>
