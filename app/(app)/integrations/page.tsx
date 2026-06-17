@@ -3,6 +3,7 @@ import { ArrowRight, Circle } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { getStoreIntegrations, type StoreIntegrationRow } from '@/lib/queries/integration-store';
 import { StoreToggle } from './_components/store-toggle';
+import { DeliverectToggle } from './_components/deliverect-toggle';
 
 // Always re-render server-side — channels surface token TTL, queue depth,
 // and n8n workflow state that change minute-to-minute. Disable Next caching.
@@ -64,6 +65,9 @@ function lsChannel(row: StoreIntegrationRow): { tone: Tone; detail: string } {
   if (!row.is_active) {
     return { tone: 'zinc', detail: 'store paused' };
   }
+  if (row.deliverect_active) {
+    return { tone: 'amber', detail: 'yielding to Deliverect' };
+  }
   if (!row.ls_token_ok || !row.ls_token_expires_at) {
     return { tone: 'rose', detail: 'token expired' };
   }
@@ -86,6 +90,9 @@ function shipdayChannel(row: StoreIntegrationRow): { tone: Tone; detail: string 
   // Per-store gate trumps global — if store paused, Shipday won't fire.
   if (!row.is_active) {
     return { tone: 'zinc', detail: 'store paused' };
+  }
+  if (row.deliverect_active) {
+    return { tone: 'amber', detail: 'yielding to Deliverect' };
   }
   if (!row.shipday_dispatch_active) {
     return { tone: 'zinc', detail: 'dispatcher paused (global)' };
@@ -151,6 +158,11 @@ export default async function IntegrationsPage() {
                 locationKey={row.location_key}
                 locationName={row.name}
                 initialActive={row.is_active}
+              />
+
+              <DeliverectToggle
+                locationKey={row.location_key}
+                initialActive={row.deliverect_active}
               />
 
               <div className="rounded-xl border border-border bg-background/50 px-3 py-2">

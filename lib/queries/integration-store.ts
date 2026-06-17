@@ -9,6 +9,7 @@ export interface StoreIntegrationRow {
   city: string;
   postcode: string;
   is_active: boolean;
+  deliverect_active: boolean;
   // Last 24h KPIs
   orders_24h: number;
   success_rate_24h: number;
@@ -50,7 +51,7 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
     LOCATIONS.map(async (loc) => {
       const [dimRes, ordersRes, tokenRes, productsRes, taRes, shopifyRes, shipday24hRes, shipdayLastRes] =
         await Promise.all([
-          sb.from('dim_location').select('is_active').eq('location_key', loc.key).maybeSingle(),
+          sb.from('dim_location').select('is_active, deliverect_active').eq('location_key', loc.key).maybeSingle(),
           sb.from('canonical_orders')
             .select('status')
             .eq('location_key', loc.key)
@@ -109,6 +110,7 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
         city: loc.city,
         postcode: loc.postcode,
         is_active: Boolean(dimRes.data?.is_active),
+        deliverect_active: Boolean(dimRes.data?.deliverect_active),
         orders_24h: total,
         success_rate_24h: successRate,
         ls_token_expires_at: tokenExp,

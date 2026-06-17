@@ -59,3 +59,27 @@ export async function setLocationActive(
   revalidatePath('/');
   return { ok: true };
 }
+
+export async function setDeliverectMode(
+  locationKey: LocationKey,
+  active: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!VALID_KEYS.has(locationKey)) {
+    return { ok: false, error: 'Invalid location_key' };
+  }
+
+  const auth = await assertManagement();
+  if (!auth.ok) return auth;
+
+  const sb = await createClient();
+  const { error } = await sb
+    .from('dim_location')
+    .update({ deliverect_active: active })
+    .eq('location_key', locationKey);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/integrations');
+  revalidatePath('/');
+  return { ok: true };
+}
