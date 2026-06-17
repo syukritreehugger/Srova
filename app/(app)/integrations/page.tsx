@@ -74,6 +74,20 @@ function takeawayChannel(row: StoreIntegrationRow): { tone: Tone; detail: string
   return { tone: 'emerald', detail: `${active}/${total} active` };
 }
 
+function shipdayChannel(row: StoreIntegrationRow): { tone: Tone; detail: string } {
+  if (!row.shipday_dispatch_active) {
+    return { tone: 'zinc', detail: 'dispatcher paused' };
+  }
+  const n = row.shipday_dispatched_24h;
+  if (n === 0) {
+    if (row.shipday_last_dispatched_at) {
+      return { tone: 'emerald', detail: `active · last ${relTime(row.shipday_last_dispatched_at)}` };
+    }
+    return { tone: 'emerald', detail: 'active · 0 today' };
+  }
+  return { tone: 'emerald', detail: `${n} dispatched 24h` };
+}
+
 function cardBorder(row: StoreIntegrationRow): string {
   if (!row.is_active) return 'border-border';
   if (row.ls_token_ok) return 'border-emerald-500/30';
@@ -133,7 +147,7 @@ export default async function IntegrationsPage() {
                 </div>
                 <ChannelRow label="Shopify webhook" tone={shopify.tone} detail={shopify.detail} />
                 <ChannelRow label="Lightspeed POS" tone={ls.tone} detail={ls.detail} />
-                <ChannelRow label="Shipday dispatch" tone="zinc" detail="idle" />
+                <ChannelRow label="Shipday dispatch" tone={shipdayChannel(row).tone} detail={shipdayChannel(row).detail} />
                 <ChannelRow label="Takeaway poller" tone={takeaway.tone} detail={takeaway.detail} />
               </div>
 

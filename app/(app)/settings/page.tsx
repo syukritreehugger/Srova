@@ -1,9 +1,10 @@
-import { Check, GitBranch, Lock } from "lucide-react"
+import { Check, GitBranch, Lock, Truck } from "lucide-react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
-import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID, TAKEAWAY_POLLER_ID } from "@/lib/n8n"
+import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID, TAKEAWAY_POLLER_ID, SHIPDAY_PUSH_WORKFLOW_ID } from "@/lib/n8n"
 import { PipelineToggle } from "./_components/pipeline-toggle"
 import { TakeawayToggle } from "./_components/takeaway-toggle"
+import { ShipdayToggle } from "./_components/shipday-toggle"
 
 const SECRETS = [
   { key: "SHOPIFY_WEBHOOK_SECRET", set: true, description: "HMAC-SHA256 webhook signature secret" },
@@ -22,16 +23,21 @@ export default async function SettingsPage() {
   let pipelineActive = false
   let pipelineError: string | null = null
   let takeawayPollerActive: boolean | null = null
+  let shipdayDispatchActive = false
+  let shipdayError: string | null = null
   if (configured) {
-    const [pollerRes, pusherRes, takeawayRes] = await Promise.all([
+    const [pollerRes, pusherRes, takeawayRes, shipdayRes] = await Promise.all([
       getWorkflow(POLLER_NORMALIZE_ID),
       getWorkflow(LS_PUSHER_ID),
       getWorkflow(TAKEAWAY_POLLER_ID),
+      getWorkflow(SHIPDAY_PUSH_WORKFLOW_ID),
     ])
     if (!pollerRes.ok) pipelineError = `Poller: ${pollerRes.error}`
     else if (!pusherRes.ok) pipelineError = `Pusher: ${pusherRes.error}`
     else pipelineActive = pollerRes.data.active && pusherRes.data.active
     takeawayPollerActive = takeawayRes.ok ? takeawayRes.data.active : null
+    if (!shipdayRes.ok) shipdayError = `Shipday: ${shipdayRes.error}`
+    else shipdayDispatchActive = shipdayRes.data.active
   }
 
   return (
@@ -81,6 +87,39 @@ export default async function SettingsPage() {
               </div>
             </div>
             <TakeawayToggle initialActive={takeawayPollerActive} configured={configured} />
+          </div>
+        </div>
+      </div>
+
+      <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+          <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Shipday dispatch · canonical_orders → Shipday API
+            </div>
+            <div className="mt-0.5 text-[14px] font-medium">
+              Auto-assign driver untuk delivery orders
+            </div>
+          </div>
+        </div>
+        <div className="p-5">
+          <ShipdayToggle
+            initialActive={shipdayDispatchActive}
+            configured={configured}
+            configError={shipdayError}
+          />
+          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-[11.5px] text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
+            tombol ini activate/deactivate workflow{' '}
+            <code className="font-mono text-[11px]">push_shipday_order</code>.
+            Setiap canonical order dengan{' '}
+            <code className="font-mono text-[11px]">order_type=&apos;delivery&apos;</code>{' '}
+            (Shopify + Takeaway) di-push ke Shipday lewat{' '}
+            <code className="font-mono text-[11px]">POST /orders</code> — driver bisa
+            di-assign auto/manual di Shipday dashboard. Per-store gating
+            (<code className="font-mono text-[11px]">dim_location.is_active</code>) tetap
+            berlaku — store paused tidak dispatch.
           </div>
         </div>
       </div>

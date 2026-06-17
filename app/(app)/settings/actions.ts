@@ -8,6 +8,7 @@ import {
   POLLER_NORMALIZE_ID,
   LS_PUSHER_ID,
   TAKEAWAY_POLLER_ID,
+  SHIPDAY_PUSH_WORKFLOW_ID,
 } from '@/lib/n8n';
 import { createClient } from '@/lib/supabase/server';
 
@@ -90,6 +91,24 @@ export async function setTakeawayPollerActive(
   if (!res.ok) return { ok: false, error: res.error };
 
   revalidatePath('/settings');
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function setShipdayDispatchActive(
+  active: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const auth = await assertManagement();
+  if (!auth.ok) return auth;
+
+  const res = active
+    ? await activateWorkflow(SHIPDAY_PUSH_WORKFLOW_ID)
+    : await deactivateWorkflow(SHIPDAY_PUSH_WORKFLOW_ID);
+
+  if (!res.ok) return { ok: false, error: res.error };
+
+  revalidatePath('/settings');
+  revalidatePath('/integrations');
   revalidatePath('/');
   return { ok: true };
 }

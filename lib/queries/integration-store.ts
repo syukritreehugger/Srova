@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { LOCATIONS, type LocationKey } from '@/lib/constants';
+import { getWorkflow, SHIPDAY_PUSH_WORKFLOW_ID } from '@/lib/n8n';
 
 export interface StoreIntegrationRow {
   location_key: LocationKey;
@@ -17,6 +18,9 @@ export interface StoreIntegrationRow {
   takeaway_account_count: number;
   takeaway_active_count: number;
   shopify_last_webhook_at: string | null;
+  shipday_dispatch_active: boolean;
+  shipday_dispatched_24h: number;
+  shipday_last_dispatched_at: string | null;
 }
 
 export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
@@ -29,10 +33,15 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
   const sb = await createClient();
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+  // Global signal (not per-loc): is the push_shipday_order workflow active in n8n?
+  // We fetch once and stamp on every location row.
+  const shipdayWf = await getWorkflow(SHIPDAY_PUSH_WORKFLOW_ID);
+  const shipdayDispatchActive = shipdayWf.ok ? shipdayWf.data.active : false;
+
   // For each location, gather signals in one query each (3 locs * a few queries — OK at this scale)
   const rows = await Promise.all(
     LOCATIONS.map(async (loc) => {
-      const [dimRes, ordersRes, tokenRes, productsRes, taRes, shopifyRes] =
+      const [dimRes, ordersRes, tokenRes, productsRes, taRes, shopifyRes, shipday24hRes, shipdayLastRes] =
         await Promise.all([
           sb.from('dim_location').select('is_active').eq('location_key', loc.key).maybeSingle(),
           sb.from('canonical_orders')
@@ -53,6 +62,18 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
             .eq('location_key', loc.key)
             .eq('source', 'shopify')
             .order('received_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          sb.from('canonical_orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('location_key', loc.key)
+            .not('shipday_order_id', 'is', null)
+            .gte('shipday_pushed_at', since24h),
+          sb.from('canonical_orders')
+            .select('shipday_pushed_at')
+            .eq('location_key', loc.key)
+            .not('shipday_order_id', 'is', null)
+            .order('shipday_pushed_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
         ]);
@@ -89,6 +110,9 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
         takeaway_account_count: taTokens.length,
         takeaway_active_count: taTokens.filter((t) => t.is_active).length,
         shopify_last_webhook_at: shopifyRes.data?.received_at ?? null,
+        shipday_dispatch_active: shipdayDispatchActive,
+        shipday_dispatched_24h: shipday24hRes.count ?? 0,
+        shipday_last_dispatched_at: shipdayLastRes.data?.shipday_pushed_at ?? null,
       };
     })
   );
