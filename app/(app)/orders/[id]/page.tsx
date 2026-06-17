@@ -24,6 +24,12 @@ interface PaymentJson {
   status?: string;
 }
 
+function readTotalCents(payment: unknown): number {
+  if (!payment || typeof payment !== 'object') return 0;
+  const v = (payment as PaymentJson).total_cents;
+  return typeof v === 'number' ? v : 0;
+}
+
 interface CustomerJson {
   first_name?: string;
   last_name?: string;
@@ -125,7 +131,7 @@ export default async function OrderDetailPage({
             {STATE_LABEL[order.status as OrderState]}
           </span>
         </Stat>
-        <Stat label="Total" value={eur(payment.total_cents ?? 0)} />
+        <Stat label="Total" value={eur(readTotalCents(order.payment))} />
         <Stat label="Source" value={order.source} />
         <Stat label="Location" value={locName(order.location_key)} />
       </div>

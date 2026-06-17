@@ -30,7 +30,7 @@ interface NavItem {
   onDev?: boolean
 }
 
-const NAV: { label: string; items: NavItem[] }[] = [
+const NAV_ALL: { label: string; items: NavItem[] }[] = [
   {
     label: "Pipeline",
     items: [
@@ -62,6 +62,11 @@ const NAV: { label: string; items: NavItem[] }[] = [
   },
 ]
 
+const NAV = NAV_ALL.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !item.onDev),
+})).filter((group) => group.items.length > 0)
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/"
   return pathname === href || pathname.startsWith(`${href}/`)
@@ -85,7 +90,7 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col leading-tight">
           <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground">
-            FRITUUR OS
+            Srova
           </span>
           <span className="text-[11px] text-muted-foreground">
             Operations Console

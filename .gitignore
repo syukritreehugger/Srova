@@ -13,4 +13,7 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules
 .next/
-.DS_Store.worktrees/
+.DS_Store
+.worktrees/
+test-results/
+playwright-report/

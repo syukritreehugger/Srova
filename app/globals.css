@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Apple-inspired warm minimal palette for FRITUUR OS */
+  /* Apple-inspired warm minimal palette for Srova */
   --background: oklch(0.985 0.004 80);
   --foreground: oklch(0.18 0.005 60);
 

@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "FRITUUR OS — Operations",
+  title: "Srova — Operations",
   description:
-    "Middleware operations console for Ghysels-Vagenende Frituur Group. Real-time orders, menu sync, and POS integration health across Shopify, Takeaway, Lightspeed L-Series, and Shipday.",
+    "Srova is the SaaS operations console replacing Deliverect for restaurant groups. Real-time orders, menu sync, and POS integration health across Shopify, Takeaway, Lightspeed L-Series, and Shipday. Currently piloting at Ghysels-Vagenende Frituur Group.",
   generator: "v0.app",
 }
 

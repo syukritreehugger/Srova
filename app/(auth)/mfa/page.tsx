@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { MFAForm } from './mfa-form';
 
-export const metadata: Metadata = { title: 'Two-factor auth — Frituur OS' };
+export const metadata: Metadata = { title: 'Two-factor auth — Srova' };
 
 export default async function MFAPage({
   searchParams,

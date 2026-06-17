@@ -77,7 +77,7 @@ export function PipelineToggle({
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {active
-                ? 'Frituur OS memproses webhook Shopify (normalize + push) ke Lightspeed.'
+                ? 'Srova memproses webhook Shopify (normalize + push) ke Lightspeed.'
                 : 'Webhook Shopify tetap masuk dan tersimpan, tapi normalize + push ke Lightspeed di-pause.'}
             </div>
           </div>
@@ -122,7 +122,7 @@ export function PipelineToggle({
             <div className="flex-1">
               <div className="font-semibold">Aktifkan pipeline ke Lightspeed?</div>
               <div className="mt-1 text-[11.5px] opacity-90">
-                Frituur OS akan mulai push order yang masuk ke POS Lightspeed. Pastikan
+                Srova akan mulai push order yang masuk ke POS Lightspeed. Pastikan
                 Deliverect untuk store ini sudah dimatikan agar tidak ada duplikat. Cek
                 status cutover dengan tim sebelum lanjut.
               </div>

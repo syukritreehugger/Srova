@@ -15,7 +15,10 @@ import type { Database } from '@/types/supabase';
 export async function createClient() {
   const cookieStore = await cookies();
 
-  if (process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     const serviceKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
     if (serviceKey) {
       return createSb<Database>(

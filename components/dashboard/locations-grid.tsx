@@ -7,7 +7,17 @@ function locMeta(key: string) {
   return LOCATIONS.find((l) => l.key === key)
 }
 
-function tierInfo(successRate: number) {
+function tierInfo(successRate: number, total: number) {
+  // Zero-volume locations render as neutral "idle" — emerald 100% on no traffic
+  // is dangerously misleading (looks healthy when it's actually silent).
+  if (total === 0) {
+    return {
+      tier: "idle" as const,
+      color: "text-muted-foreground",
+      bg: "bg-muted",
+      border: "border-border",
+    }
+  }
   const tier =
     successRate >= 99 ? "good" : successRate >= 95 ? "warn" : "bad"
   const color =
@@ -71,7 +81,7 @@ function Stat({
 
 function LocationCard({ h }: { h: LocationHealth }) {
   const meta = locMeta(h.key)
-  const { tier, color, bg, border } = tierInfo(h.successRate)
+  const { tier, color, bg, border } = tierInfo(h.successRate, h.total)
 
   return (
     <div
@@ -100,7 +110,7 @@ function LocationCard({ h }: { h: LocationHealth }) {
           )}
         >
           <StatusDot tier={tier} />
-          {h.successRate}%
+          {h.total === 0 ? "idle" : `${h.successRate}%`}
         </span>
       </div>
 
@@ -135,7 +145,7 @@ function LocationCard({ h }: { h: LocationHealth }) {
 
 function LocationStrip({ h }: { h: LocationHealth }) {
   const meta = locMeta(h.key)
-  const { tier, color, bg, border } = tierInfo(h.successRate)
+  const { tier, color, bg, border } = tierInfo(h.successRate, h.total)
 
   return (
     <div
@@ -191,7 +201,7 @@ function LocationStrip({ h }: { h: LocationHealth }) {
           )}
         >
           <StatusDot tier={tier} />
-          {h.successRate}%
+          {h.total === 0 ? "idle" : `${h.successRate}%`}
         </span>
       </div>
     </div>

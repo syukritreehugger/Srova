@@ -33,7 +33,10 @@ const SHOPIFY_WEBHOOK_IDS = [
 const LS_POLLER_ID = '0i4SS4CHZo1h2Poj'; // poller_q_orders_normalize
 
 export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
-  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return [];
   }
   const supabase = await createClient();
@@ -132,9 +135,10 @@ export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
   let takeawayEvent = '—';
 
   if (taTokens.length === 0) {
-    takeawayStatus = 'down';
-    takeawayDesc = 'No accounts configured';
-    takeawayEvent = 'Seed a refresh_token in takeaway_tokens';
+    // Treat as neutral "not configured" — Takeaway may not be used at every location.
+    takeawayStatus = 'operational';
+    takeawayDesc = 'Not configured';
+    takeawayEvent = '—';
   } else {
     const refreshExp = taTokens
       .map((t) => (t.refresh_expires_at ? new Date(t.refresh_expires_at).getTime() : 0))
@@ -198,7 +202,10 @@ export async function getMenuSyncStatus(): Promise<{
   lastSyncAt: string | null;
   rows: MenuSyncRow[];
 }> {
-  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return { lastSyncAt: null, rows: [] };
   }
   const supabase = await createClient();
