@@ -68,11 +68,13 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
             .select('id', { count: 'exact', head: true })
             .eq('location_key', loc.key)
             .not('shipday_order_id', 'is', null)
+            .neq('status', 'cancelled')
             .gte('shipday_pushed_at', since24h),
           sb.from('canonical_orders')
             .select('shipday_pushed_at')
             .eq('location_key', loc.key)
             .not('shipday_order_id', 'is', null)
+            .neq('status', 'cancelled')
             .order('shipday_pushed_at', { ascending: false })
             .limit(1)
             .maybeSingle(),

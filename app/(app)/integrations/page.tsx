@@ -4,6 +4,11 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import { getStoreIntegrations, type StoreIntegrationRow } from '@/lib/queries/integration-store';
 import { StoreToggle } from './_components/store-toggle';
 
+// Always re-render server-side — channels surface token TTL, queue depth,
+// and n8n workflow state that change minute-to-minute. Disable Next caching.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type Tone = 'emerald' | 'amber' | 'rose' | 'zinc';
 
 const TONE_DOT: Record<Tone, string> = {
