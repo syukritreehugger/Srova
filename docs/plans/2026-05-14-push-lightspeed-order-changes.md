@@ -105,15 +105,37 @@ When the workflow retries pushing an order with the same `external_ref`, the cus
 
 Alternatively: change the Order Customer pattern — store `ls_customer_id` on canonical_orders, look up if exists, only POST if missing.
 
-### C. State machine retry path missing
+### C. ~~State machine retry path missing~~ — FIXED 2026-05-18
 
-`is_allowed_order_state_transition()` does not allow `ls_failed → normalized`. To retry a failed order, the only legal path is `ls_failed → pushing_ls → ls_sent`. But the workflow's `State → pushing_ls` UPDATE has `WHERE status = 'normalized'`, so it no-ops on ls_failed orders. The order is "stuck" in pushing_ls without going through proper state flow.
+`is_allowed_order_state_transition()` allows `ls_failed → pushing_ls → ls_sent` (legal retry path). But several UPDATE queries in `push_lightspeed_order` had `WHERE status = 'normalized'` only, causing them to silently no-op on `ls_failed` orders — meaning retries from `/alerts` would get stuck.
 
-Today's workaround: temporarily disable the trigger via SQL admin override.
+**Fix applied 2026-05-18:** Patched all 3 occurrences across the workflow to accept both states:
 
-**Proposed fix:** Either:
-- Add `ls_failed → normalized` to allowed transitions (semantically: "user retried"), OR
-- Change State → pushing_ls UPDATE to also accept `WHERE status IN ('normalized', 'ls_failed')`.
+```sql
+-- Before:
+UPDATE canonical_orders SET status = 'pushing_ls'
+WHERE id = ... AND status = 'normalized';
+
+-- After:
+UPDATE canonical_orders SET status = 'pushing_ls'
+WHERE id = ... AND status IN ('normalized', 'ls_failed');
+```
+
+Patched nodes:
+1. **State → pushing_ls** (main happy path)
+2. **Adopt Existing LS Order** (Phase A idempotency path — adopts existing LS order ID when re-pushing)
+3. **DLQ: PLU Mismatch** (writes status='pushing_ls' then 'ls_failed' as audit trail)
+
+Now an admin retry flow works cleanly:
+```
+1. Order in ls_failed (PLU validation rejected, missing PLU)
+2. Admin maps the missing PLU in /menu
+3. Admin clicks "Retry" in /alerts → re-enqueues to q_orders_push_ls
+4. Workflow picks up, transitions ls_failed → pushing_ls → ls_sent
+   (or → ls_failed again if PLU validation still fails)
+```
+
+No more SQL admin override needed.
 
 ## Test results
 
