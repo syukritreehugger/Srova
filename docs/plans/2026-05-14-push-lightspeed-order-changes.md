@@ -95,15 +95,47 @@ Each execution now processes 1 message. With 10-second schedule, throughput is 6
 
 See "Fix #3" above. Workaround unblocks operation but limits throughput. Should be properly fixed before any source generates >360 orders/hour.
 
-### B. No customer dedup on retry — 11301 "already exists"
+### B. ~~No customer dedup on retry — 11301 "already exists"~~ — FIXED 2026-05-18
 
-When the workflow retries pushing an order with the same `external_ref`, the customer's deterministic email (`shop-${extRef}@frituuros.internal`) is unchanged. POST `/core/customer` returns 400 with code 11301 "A customer with the X email address already exists." The workflow has `onError: continueRegularOutput`, so the error item passes through to Build Order Payload, which sets `customerId = 0`. The next POST `/establishmentorder` then fails because customer 0 is invalid.
+When the workflow retried pushing an order with the same `external_ref`, the customer's deterministic email (`shop-${extRef}@frituuros.internal`) was unchanged. POST `/core/customer` returned 400 with code 11301 "A customer with the X email address already exists." The workflow has `onError: continueRegularOutput`, so the error item passed through to Build Order Payload, which set `customerId = 0`. The next POST `/establishmentorder` then failed because customer 0 is invalid.
 
-**Proposed fix:** Add a fallback in Build Customer Payload or a new node:
-- If POST `/core/customer` returned 11301, GET `/core/customer?email=<x>` to look up the existing customer ID.
-- Use that customerId in the establishmentorder payload.
+**Fix applied 2026-05-18:** Pragmatic two-part patch — no new nodes, no extra LS API calls. Reuses the `ls_customer_id` column that the Success node already persists.
 
-Alternatively: change the Order Customer pattern — store `ls_customer_id` on canonical_orders, look up if exists, only POST if missing.
+1. **`Load Canonical Order` SELECT** — added `ls_customer_id` to returned columns:
+
+   ```sql
+   -- Added column at end of SELECT list:
+   SELECT id, source, external_ref, location_key, order_type, status,
+          customer, items, payment, vat_lines, correlation_id,
+          ls_order_id, ls_customer_id
+   FROM canonical_orders WHERE id = ...;
+   ```
+
+2. **`Build Order Payload` Code node** — replaced the single-line customerId extraction with a fallback chain:
+
+   ```javascript
+   let customerId = 0;
+   const respBody = customerResponse.body;
+   if (typeof respBody === 'number' && respBody > 0) {
+     customerId = respBody;
+   } else if (respBody?.id) {
+     customerId = respBody.id;
+   } else if (customerResponse.data && typeof customerResponse.data === 'number') {
+     customerId = customerResponse.data;
+   }
+   // Fallback to persisted customer ID from prior successful push
+   if (!customerId && order.ls_customer_id) {
+     customerId = Number(order.ls_customer_id);
+   }
+   ```
+
+**How it works:**
+- **First push** — `ls_customer_id` is NULL. POST `/core/customer` succeeds, returns new ID. Build Order Payload uses it. Success node persists `ls_customer_id` to `canonical_orders`.
+- **Retry after a previously-successful push (e.g. admin retry from /alerts)** — `ls_customer_id` is populated. POST `/core/customer` fires again, returns 11301 error. Response-parsing branch yields 0 → fallback to `order.ls_customer_id` → push succeeds.
+
+**Edge case not covered:** if POST `/core/customer` succeeded on first attempt but POST `/establishmentorder` failed before Success node ran, `ls_customer_id` isn't persisted. A subsequent retry still hits Bug #4. Rare in practice (network blip between two consecutive HTTP calls in same workflow run). If it becomes a problem we can add a Postgres node between POST `/core/customer` and Build Order Payload that persists the new ID immediately. Deferred.
+
+**Why not GET-by-email lookup?** L-Series API documents `GET /core/customer` (returns ALL customers, no email filter) and `GET /core/customer/:id` (requires the ID we don't have). No efficient email lookup → paginated fallback would be slow and brittle. Persisted-ID fallback is simpler and handles 99% of retries.
 
 ### C. ~~State machine retry path missing~~ — FIXED 2026-05-18
 
