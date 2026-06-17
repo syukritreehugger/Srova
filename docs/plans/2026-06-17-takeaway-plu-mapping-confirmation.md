@@ -1,0 +1,447 @@
+# Takeaway → Lightspeed PLU Mapping — Confirmation List for Joef
+
+Generated 2026-06-17. Auto-matched via trigram similarity against Lightspeed catalog.
+
+**Legend:**
+- ✅ = exact match (similarity 1.00) — safe, just confirm
+- ⚠️ = partial match (0.5–0.99) — review manually, probably correct
+- ❌ = unmapped, no close match — Joef picks PLU manually
+
+Column format: `Takeaway name → PLU code · LS product name (orders=N)`
+
+
+---
+
+## Tipzakske (Aalst) `LOC_AALST`
+
+**Total unmapped:** 152
+- ✅ Exact (1.00): **148**
+- ⚠️ Review (0.5–0.99): **4**
+- ❌ Low (<0.5): **0**
+
+### ✅ Exact match — confirm all
+- `Klein friet` → **F2** · Klein friet _(orders=86)_
+- `Mini friet` → **F1** · Mini friet _(orders=68)_
+- `Bicky burger` → **B1** · Bicky burger _(orders=56)_
+- `Boulet` → **SA31** · Boulet _(orders=52)_
+- `Middel friet` → **F3** · Middel friet _(orders=52)_
+- `Curryworst` → **SA7** · Curryworst _(orders=47)_
+- `Stoofvlees saus ap` → **Ws5** · Stoofvlees saus ap _(orders=41)_
+- `Kippets` → **SA17** · Kippets _(orders=31)_
+- `Curryworst Speciaal` → **SA32** · Curryworst Speciaal _(orders=31)_
+- `Chixfingers` → **SA6** · Chixfingers _(orders=30)_
+- `Groot friet` → **F4** · Groot friet _(orders=30)_
+- `Mayo ap` → **Ks1** · Mayo ap _(orders=29)_
+- `Saté groot` → **SN5** · Saté groot _(orders=26)_
+- `Julientje` → **D9** · Julientje _(orders=25)_
+- `Stoofvlees saus` → **F13** · Stoofvlees saus _(orders=25)_
+- `Bitterballen` → **SA5** · Bitterballen _(orders=23)_
+- `Saté klein` → **SN4** · Saté klein _(orders=23)_
+- `Lookworst` → **SA21** · Lookworst _(orders=22)_
+- `Goulashkroket` → **SA10** · Goulashkroket _(orders=21)_
+- `Viandel` → **SN12** · Viandel _(orders=20)_
+- `Mexicano` → **SA23** · Mexicano _(orders=18)_
+- `Grizzly` → **SA4** · Grizzly _(orders=17)_
+- `Hamburger` → **B2** · Hamburger _(orders=17)_
+- `Frikandel XXL` → **SA8** · Frikandel XXL _(orders=17)_
+- `Kaaskroket` → **SA13** · Kaaskroket _(orders=17)_
+- `Stoofvlees ap` → **Ws1** · Stoofvlees ap _(orders=17)_
+- `Kipcorn` → **SA16** · Kipcorn _(orders=16)_
+- `Tartaar ap` → **Ks2** · Tartaar ap _(orders=16)_
+- `Mayo` → **F14** · Mayo _(orders=15)_
+- `Joppi ap` → **Ks6** · Joppi ap _(orders=13)_
+- `Balletjes` → **F7** · Balletjes _(orders=13)_
+- `Tartaar` → **F15** · Tartaar _(orders=13)_
+- `Romboutje` → **D8** · Romboutje _(orders=12)_
+- `Cola` → **F38** · Cola _(orders=12)_
+- `Bicky Cheese` → **B6** · Bicky cheese _(orders=11)_
+- `Ardeense saté` → **SA2** · Ardeense saté _(orders=11)_
+- `Vlammenpijp` → **SN15** · Vlammenpijp _(orders=11)_
+- `Ambiorix` → **SA1** · Ambiorix _(orders=10)_
+- `Joppi` → **F19** · Joppi _(orders=10)_
+- `Vuurvreter` → **SN18** · Vuurvreter _(orders=10)_
+- `Sitostick` → **SN6** · Sitostick _(orders=10)_
+- `Mini lucifer` → **SA26** · Mini lucifer _(orders=10)_
+- `Stoofvlees` → **F6** · Stoofvlees _(orders=10)_
+- `Kippeboutjes` → **SA14** · Kippeboutjes _(orders=10)_
+- `Pikanto` → **SN1** · Pikanto _(orders=9)_
+- `Samurai ap` → **Ks16** · Samurai ap _(orders=9)_
+- `Bicky Rib` → **B3** · Bicky Rib _(orders=9)_
+- `Kipkaaspunt` → **SA42** · Kipkaaspunt _(orders=8)_
+- `Goulash ap` → **Ws3** · Goulash ap _(orders=8)_
+- `Bicky wrap` → **B5** · Bicky wrap _(orders=8)_
+- `Bicky royal` → **B4** · Bicky royal _(orders=8)_
+- `Mini loempia` → **SA25** · Mini loempia _(orders=8)_
+- `Vleeskroket` → **SN16** · Vleeskroket _(orders=8)_
+- `Frikandel XXL Speciaal` → **SA37** · Frikandel XXL Speciaal _(orders=8)_
+- `Kaasballetjes` → **SA28** · Kaasballetjes _(orders=8)_
+- `Balletjes ap` → **Ws2** · Balletjes ap _(orders=8)_
+- `Lookworst Speciaal` → **SA33** · Lookworst Speciaal _(orders=8)_
+- `Garnaalkroket` → **SA9** · Garnaalkroket _(orders=7)_
+- `Zigeunerstick` → **SN19** · Zigeunerstick _(orders=7)_
+- `Bamischijf` → **SA3** · Bamischijf _(orders=7)_
+- `Spaghetti` → **D7** · Spaghetti _(orders=7)_
+- `Super friet` → **F5** · Super friet _(orders=7)_
+- `Twijfelaar` → **SN20** · Twijfelaar _(orders=6)_
+- `Tomaten Ketchup` → **F16** · Tomaten Ketchup _(orders=6)_
+- `Fishburger` → **B9** · Fishburger _(orders=6)_
+- `Special saus  Tk` → **F24** · Special saus | TK _(orders=6)_
+- `Andalouse ap` → **Ks5** · Andalouse ap _(orders=6)_
+- `Goulash` → **F8** · Goulash _(orders=6)_
+- `cheeseburger` → **B7** · cheeseburger _(orders=6)_
+- `Chicken burger` → **B10** · Chicken burger _(orders=6)_
+- `G'ackie` → **SA11** · G'ackie _(orders=5)_
+- `Chili Cheese Nuggets` → **SA38** · Chili Cheese Nuggets _(orders=5)_
+- `Andalouse` → **F18** · Andalouse _(orders=5)_
+- `Aperobox` → **SA30** · Aperobox _(orders=5)_
+- `Visstick` → **SN14** · Visstick _(orders=5)_
+- `Fanta Lemon` → **F54** · Fanta Lemon _(orders=5)_
+- `Mexicano XXL` → **SA24** · Mexicano XXL _(orders=5)_
+- `Cola Zero` → **F39** · Cola Zero _(orders=5)_
+- `Fanta` → **F40** · Fanta _(orders=5)_
+- `Stella Artois` → **A4** · Stella Artois _(orders=5)_
+- `Taco` → **SN9** · Taco _(orders=5)_
+- `Ragoezi` → **SN2** · Ragoezi _(orders=4)_
+- `Mexicano Speciaal` → **SA34** · Mexicano Speciaal _(orders=4)_
+- `Lucifer` → **SA18** · Lucifer _(orders=4)_
+- `Gele bickysaus ap` → **Ksa2** · Gele bickysaus ap _(orders=4)_
+- `Viandel Spicy` → **SN13** · Viandel Spicy _(orders=4)_
+- `Mammoetsaus ap` → **Ks8** · Mammoetsaus ap _(orders=4)_
+- `Frietsaus` → **F26** · Frietsaus _(orders=4)_
+- `Vol-Au-Vent kroket` → **SN17** · Vol-Au-Vent kroket _(orders=4)_
+- `Ice-Tea` → **F41** · Ice-Tea _(orders=4)_
+- `Ribster` → **SN3** · Ribster _(orders=4)_
+- `Kinderbox` → **D6** · Kinderbox _(orders=3)_
+- `Mosselen` → **D4** · Mosselen _(orders=3)_
+- `Water Bruis` → **F44** · Water Bruis _(orders=3)_
+- `Italiaantje` → **D10** · Italiaantje _(orders=3)_
+- `Loempiasaus ap` → **Ksa1** · Loempiasaus ap _(orders=3)_
+- `Aquarius Blauw` → **F51** · Aquarius Blauw _(orders=3)_
+- `Ivo mannetje` → **SA12** · Ivo mannetje _(orders=3)_
+- `Special saus  Ck` → **F25** · Special saus | CK _(orders=3)_
+- `Loempidel` → **SA19** · Loempidel _(orders=3)_
+- `Pickels` → **F22** · Pickels _(orders=3)_
+- `Gini` → **F47** · Gini _(orders=3)_
+- `Nacho cheese bites` → **SN25** · Nacho cheese bites _(orders=3)_
+- `Mozzarella sticks` → **SA27** · Mozzarella sticks _(orders=3)_
+- `Warme pepersaus ap` → **Ws9** · Warme pepersaus ap _(orders=3)_
+- `Mexicano XXL Speciaal` → **SA36** · Mexicano XXL Speciaal _(orders=2)_
+- `Spaghetti saus ap` → **Ws7** · Spaghetti saus ap _(orders=2)_
+- `Vol-Au-vent` → **F9** · Vol-Au-vent _(orders=2)_
+- `Balletjes saus ap` → **Ws6** · Balletjes saus ap _(orders=2)_
+- `Frietsaus ap` → **Ks13** · Frietsaus ap _(orders=2)_
+- `Mammoetworst` → **SA22** · Mammoetworst _(orders=2)_
+- `Veggie kipcorn` → **V2** · Veggie kipcorn _(orders=2)_
+- `Veggie curryworst` → **V1** · Veggie curryworst _(orders=2)_
+- `Vol-Au-Vent ap` → **Ws4** · Vol-Au-Vent ap _(orders=2)_
+- `Looksaus ap` → **Ks20** · Looksaus ap _(orders=2)_
+- `Pili Pili ap` → **Ks18** · Pili Pili ap _(orders=2)_
+- `Sprite` → **F42** · Sprite _(orders=2)_
+- `Saté Kr` → **SA39** · Saté Kr _(orders=2)_
+- `Tomaten Ketchup ap` → **Ks3** · Tomaten Ketchup ap _(orders=2)_
+- `Looksaus` → **F33** · Looksaus _(orders=2)_
+- `Pepersaus koud ap` → **Ks23** · Pepersaus koud ap _(orders=1)_
+- `Pepersaus koud` → **F36** · Pepersaus koud _(orders=1)_
+- `Veggie bitterballen` → **V3** · Veggie bitterballen _(orders=1)_
+- `Spaghetti saus` → **F12** · Spaghetti saus _(orders=1)_
+- `Curry Ketchup ap` → **Ks4** · Curry Ketchup ap _(orders=1)_
+- `Pepersaus warm` → **F37** · Pepersaus warm _(orders=1)_
+- `Red Bull` → **F46** · Red Bull _(orders=1)_
+- `Gele Bicky Saus` → **F53** · Gele Bicky Saus _(orders=1)_
+- `Friet Bicky` → **D11** · Friet Bicky _(orders=1)_
+- `Samurai` → **F29** · Samurai _(orders=1)_
+- `Caprisun` → **F45** · Caprisun _(orders=1)_
+- `Cocktailsaus` → **F20** · Cocktailsaus _(orders=1)_
+- `Mammoetsaus` → **F21** · Mammoetsaus _(orders=1)_
+- `Zigeuner saus ap` → **Ks15** · Zigeuner saus ap _(orders=1)_
+- `Gele curry ap` → **Ks14** · Gele curry ap _(orders=1)_
+- `Americain ap` → **Ks10** · Americain ap _(orders=1)_
+- `Gedroogde Ajuintjes` → **D15** · Gedroogde Ajuintjes _(orders=1)_
+- `Tender` → **SN10** · Tender _(orders=1)_
+- `Kaasstengels` → **SA41** · Kaasstengels _(orders=1)_
+- `Americain` → **F23** · Americain _(orders=1)_
+- `Shaslick` → **F30** · Shaslick _(orders=1)_
+- `Zigeunersaus` → **F28** · Zigeunersaus _(orders=1)_
+- `Loempia` → **SA20** · Loempia _(orders=1)_
+- `Balletjessaus` → **F10** · Balletjessaus _(orders=1)_
+- `Toscaanse saus ap` → **Ks21** · Toscaanse saus ap _(orders=1)_
+- `Gele curry` → **F27** · Gele curry _(orders=1)_
+- `Cocktail ap` → **Ks7** · Cocktail ap _(orders=1)_
+- `Kipsate` → **SA15** · Kipsate _(orders=1)_
+
+### ⚠️ Review — compare names, confirm if correct
+- `Boulet Speciaal` → **S3** · Boulet SP _(sim=0.53, orders=26)_
+- `Bicky chicken cheeseburger` → **B11** · Bicky chicken cheese _(sim=0.68, orders=3)_
+- `Pikanto Speciaal` → **SN24** · Pikanto SP _(sim=0.56, orders=3)_
+- `Viandel Speciaal` → **SN23** · Viandel SP _(sim=0.56, orders=1)_
+
+
+---
+
+## Frietbooster (Berlare) `LOC_BERLARE`
+
+**Total unmapped:** 112
+- ✅ Exact (1.00): **109**
+- ⚠️ Review (0.5–0.99): **3**
+- ❌ Low (<0.5): **0**
+
+### ✅ Exact match — confirm all
+- `Stoofvlees saus ap` → **Ws5** · Stoofvlees saus ap _(orders=51)_
+- `Curryworst` → **SA7** · Curryworst _(orders=50)_
+- `Boulet` → **SA31** · Boulet _(orders=48)_
+- `Klein friet` → **F2** · Klein friet _(orders=47)_
+- `Middel friet` → **F3** · Middel friet _(orders=33)_
+- `Lookworst` → **SA21** · Lookworst _(orders=31)_
+- `Chixfingers` → **SA6** · Chixfingers _(orders=29)_
+- `Groot friet` → **F4** · Groot friet _(orders=22)_
+- `Bicky burger` → **B1** · Bicky burger _(orders=21)_
+- `Mayo ap` → **Ks1** · Mayo ap _(orders=19)_
+- `Bicky Rib` → **B3** · Bicky Rib _(orders=19)_
+- `Bicky Cheese` → **B6** · Bicky Cheese _(orders=19)_
+- `Grizzly` → **SA4** · Grizzly _(orders=18)_
+- `Saté groot` → **SN5** · Saté groot _(orders=17)_
+- `Mini friet` → **F1** · Mini friet _(orders=16)_
+- `Joppi ap` → **Ks6** · Joppi ap _(orders=16)_
+- `Kaaskroket` → **SA13** · Kaaskroket _(orders=16)_
+- `Sitostick` → **SN6** · Sitostick _(orders=13)_
+- `Cola` → **F38** · Cola _(orders=13)_
+- `Bitterballen` → **SA5** · Bitterballen _(orders=12)_
+- `Viandel` → **SN12** · Viandel _(orders=12)_
+- `Tartaar ap` → **Ks2** · Tartaar ap _(orders=11)_
+- `Super friet` → **F5** · Super friet _(orders=11)_
+- `Stoofvlees ap` → **Ws1** · Stoofvlees ap _(orders=10)_
+- `Twijfelaar` → **SN20** · Twijfelaar _(orders=10)_
+- `Kipcorn` → **SA16** · Kipcorn _(orders=9)_
+- `Mini loempia` → **SA25** · Mini loempia _(orders=9)_
+- `Romboutje` → **D8** · Romboutje _(orders=9)_
+- `Kippeboutjes` → **SA14** · Kippeboutjes _(orders=8)_
+- `Frikandel XXL` → **SA8** · Frikandel XXL _(orders=8)_
+- `Kipsate` → **SA15** · Kipsate _(orders=8)_
+- `Kaasballetjes` → **SA28** · Kaasballetjes _(orders=8)_
+- `Ardeense saté` → **SA2** · Ardeense saté _(orders=7)_
+- `Special saus  Ck` → **F25** · Special saus | CK _(orders=7)_
+- `Saté klein` → **SN4** · Saté klein _(orders=7)_
+- `Balletjes ap` → **Ws2** · Balletjes ap _(orders=7)_
+- `Vleeskroket` → **SN16** · Vleeskroket _(orders=7)_
+- `Loempidel` → **SA19** · Loempidel _(orders=7)_
+- `Ragoezi` → **SN2** · Ragoezi _(orders=7)_
+- `Gele bickysaus ap` → **Ksa2** · Gele bickysaus ap _(orders=7)_
+- `Bicky wrap` → **B5** · Bicky wrap _(orders=7)_
+- `Mammoetworst` → **SA22** · Mammoetworst _(orders=7)_
+- `Mexicano XXL` → **SA24** · Mexicano XXL _(orders=7)_
+- `Mini lucifer` → **SA26** · Mini lucifer _(orders=6)_
+- `Zigeunerstick` → **SN19** · Zigeunerstick _(orders=6)_
+- `Mozzarella` → **SA27** · Mozzarella _(orders=6)_
+- `Ribster` → **SN3** · Ribster _(orders=6)_
+- `Bamischijf` → **SA3** · Bamischijf _(orders=6)_
+- `Hamburger` → **B2** · Hamburger _(orders=6)_
+- `Ambiorix` → **SA1** · Ambiorix _(orders=5)_
+- `Spaghetti` → **D7** · Spaghetti _(orders=5)_
+- `Garnaalkroket` → **SA9** · Garnaalkroket _(orders=5)_
+- `Vol-Au-Vent kroket` → **SN17** · Vol-Au-Vent kroket _(orders=5)_
+- `Ice-Tea` → **F41** · Ice-Tea _(orders=5)_
+- `Mammoetsaus ap` → **Ks8** · Mammoetsaus ap _(orders=5)_
+- `Bicky chicken cheeseburger` → **B11** · Bicky chicken cheeseburger _(orders=5)_
+- `Mexicano` → **SA23** · Mexicano _(orders=4)_
+- `Andalouse ap` → **Ks5** · Andalouse ap _(orders=4)_
+- `Frietsaus ap` → **Ks13** · Frietsaus ap _(orders=4)_
+- `Goulashkroket` → **SA10** · Goulashkroket _(orders=4)_
+- `Red Bull` → **F46** · Red Bull _(orders=4)_
+- `G'ackie` → **SA11** · G'ackie _(orders=4)_
+- `Italiaantje` → **D10** · Italiaantje _(orders=4)_
+- `Vol-Au-Vent ap` → **Ws4** · Vol-Au-Vent ap _(orders=4)_
+- `cheeseburger` → **B7** · cheeseburger _(orders=4)_
+- `Peper Burger` → **B20** · Peper Burger _(orders=4)_
+- `Visstick` → **SN14** · Visstick _(orders=4)_
+- `Kipkaaspunt` → **SA42** · Kipkaaspunt _(orders=4)_
+- `Americain ap` → **Ks10** · Americain ap _(orders=3)_
+- `Viandel Spicy` → **SN13** · Viandel Spicy _(orders=3)_
+- `Fanta` → **F40** · Fanta _(orders=3)_
+- `Pickels ap` → **Ks9** · Pickels ap _(orders=3)_
+- `Nalu` → **F49** · Nalu _(orders=3)_
+- `Pikanto` → **SN1** · Pikanto _(orders=3)_
+- `Kinderbox` → **D6** · Kinderbox _(orders=3)_
+- `Booster Burger Menu` → **B17** · Booster Burger Menu _(orders=3)_
+- `Chicken cheeseburger` → **B12** · Chicken cheeseburger _(orders=3)_
+- `Taco` → **SN9** · Taco _(orders=3)_
+- `Lucifer` → **SA18** · Lucifer _(orders=3)_
+- `Gedroogde Ajuintjes` → **D15** · Gedroogde Ajuintjes _(orders=2)_
+- `Texas Burger Menu` → **B19** · Texas Burger Menu _(orders=2)_
+- `Tender` → **SN10** · Tender _(orders=2)_
+- `Jupiler` → **A1** · Jupiler _(orders=2)_
+- `Curry Ketchup ap` → **Ks4** · Curry Ketchup ap _(orders=2)_
+- `Balletjes saus ap` → **Ws6** · Balletjes saus ap _(orders=2)_
+- `Gini` → **F47** · Gini _(orders=2)_
+- `Gele curry ap` → **Ks14** · Gele curry ap _(orders=2)_
+- `Vuurvreter` → **SN18** · Vuurvreter _(orders=2)_
+- `Warme pepersaus ap` → **Ws9** · Warme pepersaus ap _(orders=2)_
+- `Cola Zero` → **F39** · Cola Zero _(orders=1)_
+- `Vlammensaus ap` → **Ks19** · Vlammensaus ap _(orders=1)_
+- `Cocktail ap` → **Ks7** · Cocktail ap _(orders=1)_
+- `Fishburger` → **B9** · Fishburger _(orders=1)_
+- `Tomaten Ketchup ap` → **Ks3** · Tomaten Ketchup ap _(orders=1)_
+- `Loempiasaus ap` → **Ksa1** · Loempiasaus ap _(orders=1)_
+- `Stella Artois` → **A4** · Stella Artois _(orders=1)_
+- `Aperobox` → **SA30** · Aperobox _(orders=1)_
+- `Sprite` → **F42** · Sprite _(orders=1)_
+- `Friet Bicky` → **D11** · Friet Bicky _(orders=1)_
+- `Samurai ap` → **Ks16** · Samurai ap _(orders=1)_
+- `Aquarius Rood` → **F52** · Aquarius ROOD _(orders=1)_
+- `Pili Pili ap` → **Ks18** · Pili Pili ap _(orders=1)_
+- `Spaghetti saus ap` → **Ws7** · Spaghetti saus ap _(orders=1)_
+- `Chineese saus ap` → **Ks22** · Chineese saus ap _(orders=1)_
+- `Looksaus ap` → **Ks20** · Looksaus ap _(orders=1)_
+- `Fanta Lemon` → **F54** · Fanta Lemon _(orders=1)_
+- `Shaslick ap` → **Ks17** · Shaslick ap _(orders=1)_
+- `Ivo mannetje` → **SA12** · Ivo mannetje _(orders=1)_
+- `Pepersaus koud ap` → **Ks23** · Pepersaus koud ap _(orders=1)_
+
+### ⚠️ Review — compare names, confirm if correct
+- `Booster Burger T` → **B14** · Booster Burger _(sim=0.87, orders=4)_
+- `Texas Burger T` → **B16** · Texas Burger _(sim=0.93, orders=3)_
+- `Classic Burger T` → **B15** · Classic Burger _(sim=0.88, orders=3)_
+
+
+---
+
+## Frietchalet (Dendermonde) `LOC_DENDER`
+
+**Total unmapped:** 123
+- ✅ Exact (1.00): **107**
+- ⚠️ Review (0.5–0.99): **12**
+- ❌ Low (<0.5): **4**
+
+### ✅ Exact match — confirm all
+- `Stoofvlees saus ap` → **Ws5** · Stoofvlees saus ap _(orders=64)_
+- `Bicky burger` → **B1** · Bicky burger _(orders=33)_
+- `Mayo ap` → **Ks1** · Mayo ap _(orders=32)_
+- `Kippets` → **SA17** · Kippets _(orders=28)_
+- `Thuislevering` → **F49** · Thuislevering _(orders=23)_
+- `Bitterballen` → **SA5** · Bitterballen _(orders=20)_
+- `Berepoot` → **SA1** · Berepoot _(orders=20)_
+- `Saté klein` → **SN4** · Saté klein _(orders=17)_
+- `Lookworst` → **SA21** · Lookworst _(orders=17)_
+- `Saté groot` → **SN5** · Saté groot _(orders=16)_
+- `Sitostick` → **SN6** · Sitostick _(orders=16)_
+- `Joppi ap` → **Ks6** · Joppi ap _(orders=16)_
+- `Stoofvlees ap` → **Ws1** · Stoofvlees ap _(orders=15)_
+- `Super friet` → **F5** · Super friet _(orders=14)_
+- `Viandel` → **SN12** · Viandel _(orders=13)_
+- `Ardeense saté` → **SA2** · Ardeense saté _(orders=12)_
+- `Grizzly` → **SA4** · Grizzly _(orders=11)_
+- `Garnaalkroket` → **SA9** · Garnaalkroket _(orders=11)_
+- `Special saus  Ck` → **Ks11** · Special saus | CK _(orders=10)_
+- `Vlammenpijp` → **SN15** · Vlammenpijp _(orders=10)_
+- `Taco` → **SN9** · Taco _(orders=9)_
+- `Vuurvreter` → **SN18** · Vuurvreter _(orders=8)_
+- `Kipsate` → **SA15** · Kipsate _(orders=8)_
+- `Spaghetti` → **D7** · Spaghetti _(orders=7)_
+- `Tartaar ap` → **Ks2** · Tartaar ap _(orders=7)_
+- `Warme pepersaus ap` → **Ws9** · Warme pepersaus ap _(orders=7)_
+- `Bicky royal` → **B13** · Bicky Royal _(orders=7)_
+- `Bicky Rib` → **B3** · Bicky Rib _(orders=7)_
+- `Julientje` → **D9** · Julientje _(orders=6)_
+- `Gini` → **F47** · Gini _(orders=6)_
+- `Ice-Tea` → **F41** · Ice-Tea _(orders=6)_
+- `Pepersaus koud ap` → **Ks23** · Pepersaus koud ap _(orders=6)_
+- `Frietsaus ap` → **Ks13** · Frietsaus ap _(orders=6)_
+- `Bicky Cheese` → **B6** · Bicky Cheese _(orders=6)_
+- `Romboutje` → **D8** · Romboutje _(orders=6)_
+- `Lucifer` → **SA18** · Lucifer _(orders=6)_
+- `Mexicano XXL` → **SA24** · Mexicano XXL _(orders=6)_
+- `Twijfelaar` → **SN20** · Twijfelaar _(orders=5)_
+- `Mozzarella` → **SA27** · Mozzarella _(orders=5)_
+- `Tender` → **SN10** · Tender _(orders=5)_
+- `Frikandel XXL` → **SA8** · Frikandel XXL _(orders=5)_
+- `cheeseburger` → **B7** · cheeseburger _(orders=5)_
+- `Samurai ap` → **Ks16** · Samurai ap _(orders=5)_
+- `Fanta` → **F40** · Fanta _(orders=5)_
+- `Balletjes ap` → **Ws2** · Balletjes ap _(orders=4)_
+- `Warme curry ap` → **Wsa1** · Warme curry ap _(orders=4)_
+- `Red Bull` → **F46** · Red Bull _(orders=4)_
+- `Andalouse ap` → **Ks5** · Andalouse ap _(orders=4)_
+- `Kaasballetjes` → **SA28** · Kaasballetjes _(orders=4)_
+- `Zigeunerstick` → **SN19** · Zigeunerstick _(orders=4)_
+- `Bicky wrap` → **B5** · Bicky wrap _(orders=4)_
+- `Italiaantje` → **D10** · Italiaantje _(orders=4)_
+- `Visstick` → **SN14** · Visstick _(orders=4)_
+- `Special saus  Tk` → **F24** · Special saus | TK _(orders=4)_
+- `Mammoetworst` → **SA22** · Mammoetworst _(orders=4)_
+- `Mini loempia` → **SA25** · Mini loempia _(orders=4)_
+- `Sharmao rol` → **SN26** · Sharmao rol _(orders=3)_
+- `Vol-Au-Vent kroket` → **SN17** · Vol-Au-Vent kroket _(orders=3)_
+- `Aperobox` → **SA30** · Aperobox _(orders=3)_
+- `Chicken burger` → **B10** · Chicken burger _(orders=3)_
+- `Veggi burger` → **B8** · Veggi burger _(orders=3)_
+- `Goulashkroket` → **SA10** · Goulashkroket _(orders=3)_
+- `Pikanto` → **SN1** · Pikanto _(orders=3)_
+- `Ribster` → **SN3** · Ribster _(orders=3)_
+- `Curry Ketchup ap` → **Ks4** · Curry Ketchup ap _(orders=3)_
+- `Goulash` → **F8** · Goulash _(orders=3)_
+- `Loempidel` → **SA19** · Loempidel _(orders=3)_
+- `Zigeuner saus ap` → **Ks15** · Zigeuner saus ap _(orders=3)_
+- `Fishburger` → **B9** · Fishburger _(orders=3)_
+- `Mini lucifer` → **SA26** · Mini lucifer _(orders=3)_
+- `Bicky chicken cheeseburger` → **B11** · Bicky chicken cheeseburger _(orders=2)_
+- `Gele bickysaus ap` → **Ksa2** · Gele bickysaus ap _(orders=2)_
+- `Sweet Chilly` → **SN8** · Sweet Chilly _(orders=2)_
+- `Balletjes saus ap` → **Ws6** · Balletjes saus ap _(orders=2)_
+- `Tomaten Ketchup ap` → **Ks3** · Tomaten Ketchup ap _(orders=2)_
+- `Kinderbox` → **D6** · Kinderbox _(orders=2)_
+- `Veggie curryworst` → **V1** · Veggie curryworst _(orders=2)_
+- `Mayo` → **F14** · Mayo _(orders=2)_
+- `Pili Pili ap` → **Ks18** · Pili Pili ap _(orders=2)_
+- `G'ackie` → **SA11** · G'ackie _(orders=2)_
+- `Bicky Chicken burger` → **B20** · Bicky Chicken burger _(orders=2)_
+- `Sprite` → **F42** · Sprite _(orders=2)_
+- `Americain ap` → **Ks10** · Americain ap _(orders=2)_
+- `Jupiler` → **A1** · Jupiler _(orders=2)_
+- `Ivo mannetje` → **SA12** · Ivo mannetje _(orders=2)_
+- `Mammoetsaus ap` → **Ks8** · Mammoetsaus ap _(orders=2)_
+- `Spaghetti saus ap` → **Ws7** · Spaghetti saus ap _(orders=2)_
+- `Goulash ap` → **Ws3** · Goulash ap _(orders=2)_
+- `Garnaalballetjes` → **SA29** · Garnaalballetjes _(orders=2)_
+- `Mosselen` → **D4** · Mosselen _(orders=1)_
+- `Stoofvlees` → **F6** · Stoofvlees _(orders=1)_
+- `Moster ap` → **Ksa3** · Moster ap _(orders=1)_
+- `Veggie bitterballen` → **V3** · Veggie bitterballen _(orders=1)_
+- `Shaslick ap` → **Ks17** · Shaslick ap _(orders=1)_
+- `Balletjessaus` → **F10** · Balletjessaus _(orders=1)_
+- `Goulash saus` → **F11** · Goulash saus _(orders=1)_
+- `Vlees hamburger` → **SN21** · Vlees hamburger _(orders=1)_
+- `Oasis` → **F48** · Oasis _(orders=1)_
+- `Loempiasaus ap` → **Ksa1** · Loempiasaus ap _(orders=1)_
+- `Shaslick` → **F30** · Shaslick _(orders=1)_
+- `Spaghetti saus` → **F12** · Spaghetti saus _(orders=1)_
+- `Goulash saus ap` → **Ws8** · Goulash saus ap _(orders=1)_
+- `Potje saté kruiden` → **D17** · Potje Saté kruiden _(orders=1)_
+- `Viandel Spicy` → **SN13** · Viandel Spicy _(orders=1)_
+- `Vol-Au-vent` → **F9** · Vol-Au-vent _(orders=1)_
+- `Gele curry ap` → **Ks14** · Gele curry ap _(orders=1)_
+- `Tartaar` → **F15** · Tartaar _(orders=1)_
+
+### ⚠️ Review — compare names, confirm if correct
+- `Curryworst Speciaal` → **SA32** · Curryworst SP _(sim=0.62, orders=26)_
+- `Boulet Speciaal` → **S3** · Boulet SP _(sim=0.53, orders=18)_
+- `Lookworst Speciaal` → **SA33** · Lookworst SP _(sim=0.60, orders=12)_
+- `Kippeboutjes` → **SA14** · Kippenboutjes _(sim=0.69, orders=9)_
+- `Frikandel XXL Speciaal` → **SA37** · Frikandel XXL SP _(sim=0.67, orders=4)_
+- `Kaassouflé` → **SA41** · Kaassoufflé _(sim=0.77, orders=3)_
+- `Mexicano XXL Speciaal` → **SA24** · Mexicano XXL _(sim=0.59, orders=2)_
+- `Mexicano Speciaal` → **SA34** · Mexicano SP _(sim=0.58, orders=2)_
+- `Jupiler 50CL` → **A1** · Jupiler _(sim=0.62, orders=1)_
+- `Mozzarella sticks` → **SA27** · Mozzarella _(sim=0.61, orders=1)_
+- `Viandel Speciaal` → **SN23** · Viandel SP _(sim=0.56, orders=1)_
+- `Pikanto Speciaal` → **SN24** · Pikanto SP _(sim=0.56, orders=1)_
+
+### ❌ Low similarity — manual
+- `Ragoezi` → **SN2**? · Ragouzi _(sim=0.45, orders=6)_
+- `Nacho Cheese Bites` → **B6**? · Bicky Cheese _(sim=0.39, orders=5)_
+- `Nacho cheese bites` → **B6**? · Bicky Cheese _(sim=0.39, orders=1)_
+- `Kaasstengels` → **D2**? · Kaas _(sim=0.29, orders=1)_
+
+
+---
+## No candidate at all (manual mapping needed)
+
+- `LOC_DENDER · Ambiorix (4 orders)` — no similar LS Dender product. Joef adds manual product in LS or picks an alternate PLU.
