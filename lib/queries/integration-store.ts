@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { LOCATIONS, type LocationKey } from '@/lib/constants';
 import { getWorkflow, SHIPDAY_PUSH_WORKFLOW_ID } from '@/lib/n8n';
 
@@ -30,7 +31,13 @@ export async function getStoreIntegrations(): Promise<StoreIntegrationRow[]> {
   ) {
     return [];
   }
-  const sb = await createClient();
+  // Authenticated SSR client (for tables with user-aware policies if any later).
+  const sbUser = await createClient();
+  // Service-role client for internal operational tables whose RLS is service-role-only
+  // (ls_tokens, raw_ls_products, dlq_alerts). UI just needs to display state — no PII.
+  const sb = createServiceClient();
+  // Keep dim_location through user client (has authenticated policy).
+  void sbUser;
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   // Global signal (not per-loc): is the push_shipday_order workflow active in n8n?

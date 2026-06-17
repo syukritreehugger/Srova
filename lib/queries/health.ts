@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getWorkflow, LS_PUSHER_ID, TAKEAWAY_POLLER_ID } from '@/lib/n8n';
 
 export type IntegrationStatus =
@@ -39,7 +40,9 @@ export async function getIntegrationHealth(): Promise<IntegrationRow[]> {
   ) {
     return [];
   }
-  const supabase = await createClient();
+  // Internal operational signals (ls_tokens, raw_orders.hmac_valid) live behind RLS
+  // that only service_role can read. The UI just needs to display state — no PII.
+  const supabase = createServiceClient();
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -208,7 +211,7 @@ export async function getMenuSyncStatus(): Promise<{
   ) {
     return { lastSyncAt: null, rows: [] };
   }
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data } = await supabase
     .from('menu_sync_log')

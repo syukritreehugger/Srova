@@ -2,7 +2,11 @@ import type React from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Topbar } from "@/components/dashboard/topbar"
 import { getIntegrationHealth, type IntegrationRow } from "@/lib/queries/health"
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
+
+// Topbar surfaces queue + workflow state that change minute-to-minute.
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 async function safeHealth(): Promise<IntegrationRow[]> {
   try {
@@ -15,7 +19,8 @@ async function safeHealth(): Promise<IntegrationRow[]> {
 
 async function safeAlertCount(): Promise<number> {
   try {
-    const sb = await createClient()
+    // dlq_alerts has RLS service-role-only — use service client for unresolved count.
+    const sb = createServiceClient()
     const { count } = await sb
       .from("dlq_alerts")
       .select("id", { count: "exact", head: true })
