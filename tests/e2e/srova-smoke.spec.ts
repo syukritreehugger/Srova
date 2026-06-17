@@ -241,7 +241,7 @@ describeAuth('Authenticated: Integration Store', () => {
       .locator(':is(article, [class*="card"], div)', { hasText: /tipzakske/i })
       .first();
     await expect(tipzakskeCard).toBeVisible({ timeout: 15_000 });
-    await expect(tipzakskeCard.getByText(/active/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(tipzakskeCard.getByText(/accepting orders|active/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('Frietbooster card shows Paused state', async ({ page }) => {

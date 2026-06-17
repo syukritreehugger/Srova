@@ -53,12 +53,12 @@ export function StoreToggle({
           </span>
           <div>
             <div className="text-[13px] font-semibold">
-              {active ? 'Pipeline active' : 'Pipeline paused'}
+              {active ? 'Accepting orders' : 'Paused — accepting zero orders'}
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
               {active
-                ? 'Orders push to Lightspeed.'
-                : 'Orders stored, not pushed to POS.'}
+                ? 'Webhooks accepted, orders push to Lightspeed.'
+                : 'Webhooks silently 200-OK’d, no rows written. New orders only count from activation onward.'}
             </div>
           </div>
         </div>
