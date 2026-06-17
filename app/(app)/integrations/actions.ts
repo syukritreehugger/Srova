@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { LOCATIONS, type LocationKey } from '@/lib/constants';
 
 const VALID_KEYS = new Set<string>(LOCATIONS.map((l) => l.key));
@@ -46,13 +47,17 @@ export async function setLocationActive(
   const auth = await assertManagement();
   if (!auth.ok) return auth;
 
-  const sb = await createClient();
-  const { error } = await sb
+  // Use service-role for the UPDATE — dim_location only has SELECT policy
+  // for authenticated; user-role UPDATE is silently rejected (0 rows affected).
+  // Authorisation already enforced by assertManagement() above.
+  const sb = createServiceClient();
+  const { error, count } = await sb
     .from('dim_location')
-    .update({ is_active: active })
+    .update({ is_active: active }, { count: 'exact' })
     .eq('location_key', locationKey);
 
   if (error) return { ok: false, error: error.message };
+  if (!count || count === 0) return { ok: false, error: 'No row updated' };
 
   revalidatePath('/integrations');
   revalidatePath('/settings');
@@ -71,13 +76,15 @@ export async function setDeliverectMode(
   const auth = await assertManagement();
   if (!auth.ok) return auth;
 
-  const sb = await createClient();
-  const { error } = await sb
+  // Same as setLocationActive — service-role for UPDATE; auth already enforced.
+  const sb = createServiceClient();
+  const { error, count } = await sb
     .from('dim_location')
-    .update({ deliverect_active: active })
+    .update({ deliverect_active: active }, { count: 'exact' })
     .eq('location_key', locationKey);
 
   if (error) return { ok: false, error: error.message };
+  if (!count || count === 0) return { ok: false, error: 'No row updated' };
 
   revalidatePath('/integrations');
   revalidatePath('/');
