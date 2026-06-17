@@ -21,13 +21,13 @@ const NAV_VISIBLE = [
   { href: '/alerts', label: 'Alerts' },
   { href: '/locations', label: 'Locations' },
   { href: '/menu', label: 'Menu sync' },
+  { href: '/integrations', label: 'Integration Store' },
   { href: '/settings', label: 'Settings' },
 ] as const;
 
 const ON_DEV_HIDDEN = [
   '/audit',
   '/mappings',
-  '/integrations',
   '/opening-times',
   '/snooze',
   '/restaurant-status',
@@ -92,7 +92,6 @@ describeAuth('Authenticated: sidebar + every visible page renders', () => {
     const onDevLabels = [
       'Audit log',
       'Mappings',
-      'Integrations',
       'Opening times',
       'Snooze',
       'Online/Offline',
@@ -219,5 +218,49 @@ describeAuth('Authenticated: widget + backend wiring', () => {
     await expect(
       page.getByText(/Aalst|Berlare|Dender|Tipzakske|Frietbooster|Frietchalet/i).first()
     ).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+describeAuth('Authenticated: Integration Store', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginVia(page);
+  });
+
+  test('Integration Store page loads and shows 3 store cards', async ({ page }) => {
+    await page.goto('/integrations');
+    await expectNoCrash(page);
+    await expect(page.getByText(/tipzakske/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/frietbooster/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/frietchalet/i).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('Tipzakske card shows Active state', async ({ page }) => {
+    await page.goto('/integrations');
+    await expectNoCrash(page);
+    const tipzakskeCard = page
+      .locator(':is(article, [class*="card"], div)', { hasText: /tipzakske/i })
+      .first();
+    await expect(tipzakskeCard).toBeVisible({ timeout: 15_000 });
+    await expect(tipzakskeCard.getByText(/active/i).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('Frietbooster card shows Paused state', async ({ page }) => {
+    await page.goto('/integrations');
+    await expectNoCrash(page);
+    const frietboosterCard = page
+      .locator(':is(article, [class*="card"], div)', { hasText: /frietbooster/i })
+      .first();
+    await expect(frietboosterCard).toBeVisible({ timeout: 15_000 });
+    await expect(frietboosterCard.getByText(/paused/i).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('Frietchalet card shows Paused state', async ({ page }) => {
+    await page.goto('/integrations');
+    await expectNoCrash(page);
+    const frietchaletCard = page
+      .locator(':is(article, [class*="card"], div)', { hasText: /frietchalet/i })
+      .first();
+    await expect(frietchaletCard).toBeVisible({ timeout: 15_000 });
+    await expect(frietchaletCard.getByText(/paused/i).first()).toBeVisible({ timeout: 10_000 });
   });
 });
