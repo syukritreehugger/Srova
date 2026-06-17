@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-FRITUUR OS — an operations dashboard replacing Deliverect for Ghysels-Vagenende Frituur Group (three Belgian frituur locations). It's a Next.js 16 app that monitors the order pipeline: Shopify/Takeaway.com orders flow through n8n workflows into Lightspeed L-Series POS, with Shipday for delivery dispatch. Supabase is the database (Postgres + RLS + Edge Functions).
+**Srova** — a SaaS operations console that replaces Deliverect for restaurant groups. Real-time orders, menu sync, and POS integration health across Shopify, Takeaway.com, Lightspeed L-Series, and Shipday. Currently piloting at **Ghysels-Vagenende Frituur Group** (three Belgian frituur locations: Aalst, Berlare, Dender). It's a Next.js 16 app monitoring the order pipeline: Shopify/Takeaway.com orders flow through n8n workflows into Lightspeed L-Series POS, with Shipday for delivery dispatch. Supabase is the database (Postgres + RLS + Edge Functions).
+
+Branding: the product is **Srova** (mixed case, like Vercel/Linear). "FrituurOS" was the old internal name and may still appear in legacy infrastructure (VPS path, customer email fingerprint `@frituuros.internal` — these are deliberately preserved because changing them would break Lightspeed customer dedup for existing orders).
 
 ## Commands
 
@@ -12,8 +14,24 @@ FRITUUR OS — an operations dashboard replacing Deliverect for Ghysels-Vagenend
 pnpm dev          # start dev server (localhost:3000)
 pnpm build        # production build
 pnpm lint         # ESLint
-pnpm test         # vitest (if tests exist — vitest is a devDependency)
+pnpm test         # vitest — watch mode
+pnpm test -- --run                          # single pass, no watch
+pnpm test -- --run lib/queries/alerts.helpers.test.ts  # single file
 ```
+
+**Deployment:** The app runs on VPS at `https://srova.ghysels-vagenende.be/`. Do not start `pnpm dev` locally for UI verification — test against the deployed URL.
+
+## Deployment
+
+- **GitHub repo:** `https://github.com/syukritreehugger/Srova.git` (renamed from FrituurOS on 2026-06-17; GitHub auto-redirects the old URL)
+- **VPS:** `ssh root@72.61.208.251` — app runs at `https://srova.ghysels-vagenende.be/`
+- VPS clone path is still `/var/www/frituur-os` (not renamed; cosmetic only)
+- Do not run `pnpm dev` locally for UI testing — test against the deployed URL.
+
+## MCP Access
+
+- **n8n workflows** — use `mcp__n8n-mcp__*` tools (list, get, update, executions). Prefer these over manual REST calls to `N8N_API_URL`.
+- **Supabase database** — use `mcp__supabase-self-hosted__*` tools (execute_sql, apply_migration, list_tables, get_logs). Always verify live schema here rather than trusting `types/supabase.ts` snapshots alone.
 
 ## Key Environment Variables
 
@@ -23,12 +41,13 @@ Copy `.env.example` to `.env.local`. Critical vars:
 - `NEXT_PUBLIC_DEV_SKIP_AUTH=1` — skips auth middleware + uses service-role client in dev
 - `NEXT_PUBLIC_USE_MOCK_DATA=1` — returns hardcoded mock data from query functions
 - `N8N_API_URL` / `N8N_API_KEY` — n8n instance for pipeline control
+- `SHOPIFY_AALST_DOMAIN` / `SHOPIFY_AALST_TOKEN` — per-location Shopify Admin API (same pattern for `BERLARE`, `DENDER`)
 
 ## Architecture
 
 **Route groups:**
-- `(app)/*` — authenticated dashboard pages (orders, alerts, pipeline, menu, settings, etc.). Layout fetches integration health and DLQ alert count for the sidebar/topbar.
-- `(auth)/*` — login + MFA flows. MFA enforcement is currently disabled.
+- `(app)/*` — authenticated dashboard pages. Layout fetches integration health and DLQ alert count for the sidebar/topbar. Key routes: `/` (dashboard), `/orders`, `/orders/[id]`, `/alerts`, `/alerts/[id]`, `/pipeline`, `/menu`, `/settings`, `/locations`, `/integrations`, `/restaurant-status`, `/opening-times`, `/snooze`, `/mappings`, `/audit`, `/gdpr`.
+- `(auth)/*` — login + MFA flows. MFA enforcement is currently disabled (`requiresMFA()` always returns `false` in `middleware.ts`). Default role when `app_metadata.role` is absent: `management`.
 - `api/auth/signout` — sign-out API route.
 
 **Data flow:**
@@ -36,6 +55,8 @@ Copy `.env.example` to `.env.local`. Critical vars:
 - `lib/supabase/service.ts` — service-role client for server-only operations.
 - `lib/queries/` — server-side data fetching (dashboard KPIs, orders, alerts, health, pipeline). Each function queries Supabase directly and falls back to mock data when `NEXT_PUBLIC_USE_MOCK_DATA=1`.
 - `lib/n8n.ts` — REST client to control n8n workflows (activate/deactivate/status). Hardcoded workflow IDs for Shopify webhook handlers, LS pusher, and the poller.
+- `lib/shopify.ts` — Shopify Admin REST API client (`2024-10`). `getProductsForLocation(loc)` fetches all variants page-by-page; used by the `/menu` mapping page. Per-location config reads `SHOPIFY_*_DOMAIN` / `SHOPIFY_*_TOKEN` env vars.
+- `lib/queries/alerts.helpers.ts` — pure helpers: `humanStage()` (queue name → human label), `classify()` (attempt count → severity), `readError()` (JSONB → `ErrorJson`). Unit-tested in `alerts.helpers.test.ts`.
 - `lib/constants.ts` — canonical location keys (`LOC_AALST`, `LOC_BERLARE`, `LOC_DENDER`), order state enum, and UI tone mappings. These must match the Postgres ENUMs exactly.
 - `lib/data.ts` — static mock/dummy data for the dashboard skeleton (not used in production queries).
 
@@ -44,8 +65,15 @@ Copy `.env.example` to `.env.local`. Critical vars:
 - `raw_orders` — raw webhook payloads with HMAC validation
 - `dlq_alerts` — dead-letter queue alerts for failed pipeline stages
 - `ls_tokens` — Lightspeed OAuth tokens per location
+- `raw_ls_products` — Lightspeed catalog synced by `sync_lightspeed_products` n8n workflow; used for PLU pre-validation (Phase B)
+- `audit_log` / `order_state_history` — immutable audit trail (see types/supabase.ts)
 - `menu_sync_log` — menu sync history
 - `v_pipeline_latency` — materialized view for p50/p95/p99 latency metrics
+
+**Supabase RPC functions called from queries:**
+- `pgmq_send_order(order_id, location_key)` — enqueues to pgmq (wrapper; do not call `pgmq.send()` directly)
+- `pgmq_delete_order(msg_id, queue_name)` — dequeues from pgmq (wrapper; `pgmq.delete()` is permission-denied)
+- `retry_ladder_stats(p_location_key)` — returns `{ live, history_24h, dlq_depth }` JSON for the pipeline page
 
 **Order pipeline states:** `received` → `normalized` → `pushing_ls` → `ls_sent` → `ls_accepted` → `shipday_sent` → `complete` (with `ls_failed`, `ls_rejected`, `cancelled` as terminal error states).
 
@@ -62,6 +90,8 @@ Copy `.env.example` to `.env.local`. Critical vars:
 - The `payment` column is JSONB — always use the `readTotalCents()` helper to safely extract `payment.total_cents`.
 - Supabase types are hand-maintained (not auto-generated) — update `types/supabase.ts` when changing the schema.
 - n8n workflow IDs are hardcoded constants in `lib/n8n.ts` and `lib/queries/health.ts`.
+- `cancel_reason` on `canonical_orders` is dual-use: a human-readable string normally, but Phase D2 auto-retry stores `{"auto_retry_count": N}` JSON in it. Read with `(cancel_reason::jsonb->>'auto_retry_count')::int` in SQL; never overwrite without preserving the retry count.
+- The `/menu` page includes a help text written in Bahasa Indonesia ("Bagaimana ini bekerja") — that is intentional for the owner audience.
 
 ## n8n Pipeline Modifications (Phase A/B)
 

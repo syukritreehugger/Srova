@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { LoginForm } from './login-form';
 
-export const metadata: Metadata = { title: 'Login — Frituur OS' };
+export const metadata: Metadata = { title: 'Login — Srova' };
 
 export default async function LoginPage({
   searchParams,

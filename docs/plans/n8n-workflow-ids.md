@@ -24,7 +24,8 @@ When the Shipday push consumer is built (out of scope), it should read from `q_o
 ```
 [Manual Trigger | Execute Workflow Trigger]
             ↓
-       [Load Token]  (SELECT from takeaway_tokens WHERE account_name='defrietbooster')
+       [Load Token]  (SELECT from takeaway_tokens WHERE account_name='<active_account>'
+                                                     AND is_active = true)
             ↓
    [Check Token Fresh]  (sets is_fresh = expires > now+30s)
             ↓
@@ -32,15 +33,32 @@ When the Shipday push consumer is built (out of scope), it should read from `q_o
         TRUE ↓                FALSE ↓
 [Return Cached Token]   [POST /openid-connect/token]
                                 ↓
-                         [Save New Token]  (UPSERT with rotated refresh_token)
+                         [Save New Token]  (UPSERT with rotated refresh_token,
+                                            scoped to same account_name)
                                 ↓
                          [Return Refreshed Token]
 ```
 
 Output shape (both paths):
 ```json
-{ "access_token": "eyJ...", "source": "cached|refreshed", "account_name": "defrietbooster", "location_key": "LOC_BERLARE" }
+{ "access_token": "eyJ...", "source": "cached|refreshed", "account_name": "...", "location_key": "..." }
 ```
+
+### Active account (as of 2026-05-18)
+
+- **Load Token + Save New Token** SQL both hardcode `account_name = 'frietchalet'` (Frietchalet → LOC_DENDER) plus `AND is_active = true` filter.
+- Switching active account requires patching those two nodes' SQL **and** flipping the corresponding `takeaway_tokens.is_active` value.
+- Multi-account support (loop over all `is_active=true` rows) is a future enhancement — for the pilot phase we run one account at a time.
+
+### Activation toggle history
+
+| Date | Account | is_active | Reason |
+|------|---------|-----------|--------|
+| 2026-05-14 | `defrietbooster` (Berlare) | true (no column yet) | Initial integration test |
+| 2026-05-14 | `defrietbooster` | implicit true | Berlare e2e test (LS order 36162845) |
+| 2026-05-18 | `defrietbooster` | **false** | Berlare POS locked (invoice issue); Frietchalet becomes test target |
+| 2026-05-18 | `frietchalet` (Dender) | true | Frietchalet e2e pickup test (LS order 36259312) |
+| 2026-05-18 | `frietchalet` | **false** | Test complete; pipeline parked pending production cutover |
 
 ## Notes
 

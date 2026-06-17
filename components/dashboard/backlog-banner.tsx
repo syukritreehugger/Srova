@@ -23,7 +23,7 @@ export function BacklogBanner({
           <div>
             <div className="text-[12.5px] font-semibold">Pipeline paused</div>
             <div className="mt-0.5 text-[11.5px] text-amber-700/90 dark:text-amber-400/80">
-              Frituur OS is not pushing to Lightspeed. Shopify webhooks are
+              Srova is not pushing to Lightspeed. Shopify webhooks are
               still received and stored, but not forwarded to POS until an
               operator re-activates the pipeline.
             </div>

@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             className="invert dark:invert-0"
           />
           <span className="text-[15px] font-semibold tracking-tight text-foreground">
-            Frituur OS
+            Srova
           </span>
         </div>
 

@@ -40,7 +40,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Configuration"
         title="Settings"
-        description="Pipeline control, secrets, dan feature flags. Operator-friendly toggle untuk pause/resume Frituur OS push ke Lightspeed."
+        description="Pipeline control, secrets, dan feature flags. Operator-friendly toggle untuk pause/resume Srova push ke Lightspeed."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
@@ -48,7 +48,7 @@ export default async function SettingsPage() {
           <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
           <div>
             <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Pipeline · Shopify → Frituur OS → Lightspeed
+              Pipeline · Shopify → Srova → Lightspeed
             </div>
             <div className="mt-0.5 text-[14px] font-medium">
               Toggle global push ke POS

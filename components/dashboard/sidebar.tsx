@@ -85,7 +85,7 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col leading-tight">
           <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground">
-            FRITUUR OS
+            Srova
           </span>
           <span className="text-[11px] text-muted-foreground">
             Operations Console

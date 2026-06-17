@@ -24,7 +24,7 @@ export default function IntegrationsPage() {
       <PageHeader
         eyebrow="Subsystem 7"
         title="Integration health"
-        description="Six external systems power FRITUUR OS. Real-time status, uptime and latency across order ingestion, POS, delivery and infrastructure."
+        description="Six external systems power Srova. Real-time status, uptime and latency across order ingestion, POS, delivery and infrastructure."
       />
 
       <OnDevBadge

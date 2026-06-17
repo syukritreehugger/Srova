@@ -1,4 +1,4 @@
-// Static dummy data for FRITUUR OS dashboard skeleton
+// Static dummy data for Srova dashboard skeleton
 
 export type LocationId = "tipzakske" | "frietbooster" | "frietchalet"
 
