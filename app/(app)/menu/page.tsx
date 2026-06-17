@@ -8,6 +8,7 @@ import { getTakeawayMapping, getLsProductsForPicker } from "@/lib/queries/takeaw
 import { MappingStats } from "./_components/mapping-stats";
 import { MappingTable } from "./_components/mapping-table";
 import { TakeawayMappingTable } from "./_components/takeaway-mapping-table";
+import { BulkConfirmTakeaway } from "./_components/bulk-confirm-takeaway";
 import { cn } from "@/lib/utils";
 
 const VALID_FILTERS: ReadonlyArray<MappingStatus | "all" | "issues"> = [
@@ -226,6 +227,8 @@ async function TakeawayMappingSection({ loc }: { loc: LocationKey }) {
         <StatCard label="Confirmed" value={mapping.confirmed} tone="emerald" />
       </div>
 
+      <BulkConfirmTakeaway locationKey={loc} autoMatchedCount={mapping.auto_matched} />
+
       {mapping.unmapped > 0 && (
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-[12px] text-rose-700 dark:text-rose-400">
           <span className="font-semibold">
@@ -239,11 +242,22 @@ async function TakeawayMappingSection({ loc }: { loc: LocationKey }) {
 
       <div className="rounded-2xl border border-border bg-muted/30 p-4 text-[11.5px] text-muted-foreground leading-relaxed">
         <span className="font-semibold text-foreground">How this works:</span>{" "}
-        Takeaway.com has no concept of SKU — they only send the product name. Every
-        new product name that appears in an order is automatically added to this list
-        with status Unmapped. The admin picks the matching Lightspeed PLU and clicks
-        Save. Once mapped, the next order with the same product name resolves to that
-        PLU instantly and can be pushed to Lightspeed.
+        Takeaway.com has no SKU — they send product names like &quot;Bicky burger&quot;,
+        &quot;Boulet&quot;. Srova auto-matches each name against the Lightspeed catalog
+        on exact (case-insensitive) match, then shows the suggestion here as{" "}
+        <span className="font-semibold text-amber-700 dark:text-amber-400">
+          Auto-matched
+        </span>{" "}
+        for you to review. Click <strong>Confirm</strong> (per row or bulk above) to
+        approve. Rows you reject can be re-mapped by picking a different PLU.
+        <br />
+        <br />
+        <span className="font-semibold text-foreground">Modifiers (specifications):</span>{" "}
+        Takeaway sends order options like &quot;Special saus | TK&quot;, &quot;Zonder
+        zout&quot; as nested <code className="font-mono text-[11px]">specifications</code>{" "}
+        on each product. These are <em>pass-through only</em> — no mapping needed.
+        They print on the Lightspeed kitchen receipt as descriptions under the main
+        product, with their prices preserved so the totals reconcile exactly.
       </div>
     </>
   );

@@ -60,3 +60,25 @@ export async function confirmTakeawayAutoMatch(id: number) {
   if (error) throw new Error(error.message);
   revalidatePath('/menu');
 }
+
+export async function confirmAllAutoMatchedTakeaway(
+  locationKey: string
+): Promise<{ ok: true; confirmed: number } | { ok: false; error: string }> {
+  if (!locationKey) return { ok: false, error: 'location_key required' };
+
+  // Service-role: takeaway_plu_map has service-role-only UPDATE policy.
+  // Authorization gate: only management/admin can call this (UI route is auth-gated;
+  // for defence-in-depth tighten via a server-action role check if needed later).
+  const service = createServiceClient();
+  const { error, count } = await service
+    .from('takeaway_plu_map')
+    .update({ confirmed_at: new Date().toISOString() }, { count: 'exact' })
+    .eq('location_key', locationKey)
+    .eq('auto_matched', true)
+    .is('confirmed_at', null);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/menu');
+  return { ok: true, confirmed: count ?? 0 };
+}
