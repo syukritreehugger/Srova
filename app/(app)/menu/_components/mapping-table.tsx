@@ -246,14 +246,7 @@ export function MappingTable({
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       {row.shopify ? (
-                        <span
-                          className={cn(
-                            row.mismatch_reasons.includes("price_differs") &&
-                              "font-semibold text-rose-700 dark:text-rose-400"
-                          )}
-                        >
-                          {eur(row.shopify.price)}
-                        </span>
+                        <span>{eur(row.shopify.price)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -279,14 +272,14 @@ export function MappingTable({
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       {row.lightspeed ? (
-                        <span
-                          className={cn(
-                            row.mismatch_reasons.includes("price_differs") &&
-                              "font-semibold text-rose-700 dark:text-rose-400"
+                        <div className="flex flex-col items-end">
+                          <span>{eur(row.lightspeed.price)}</span>
+                          {row.mismatch_reasons.includes("price_differs") && row.shopify && (
+                            <span className="text-[10.5px] text-muted-foreground italic">
+                              push uses {eur(Math.max(row.shopify.price, row.lightspeed.price))}
+                            </span>
                           )}
-                        >
-                          {eur(row.lightspeed.price)}
-                        </span>
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -301,11 +294,6 @@ export function MappingTable({
                         {cfg.icon}
                         {cfg.label}
                       </span>
-                      {row.mismatch_reasons.includes("price_differs") && (
-                        <div className="mt-1 text-[10.5px] text-muted-foreground">
-                          price_differs
-                        </div>
-                      )}
                     </td>
                   </tr>
                 );

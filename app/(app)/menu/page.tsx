@@ -66,7 +66,7 @@ export default async function MenuPage({
         title={channel === "shopify" ? "Shopify SKU ↔ Lightspeed PLU" : "Takeaway name ↔ Lightspeed PLU"}
         description={
           channel === "shopify"
-            ? "Source of truth: Lightspeed POS catalog. Simple SKUs (e.g. F2, B11) must match LS PLU exactly. Compound SKUs (e.g. B11__Veelsaus) auto-split — only the base PLU needs to exist in LS; the suffix prints as a kitchen note."
+            ? "Simple SKUs (e.g. F2, B11) match LS PLU 1:1. Compound SKUs (e.g. B11__Veelsaus) auto-split — only the base PLU needs to exist in LS; the suffix prints as a kitchen note. Price diffs between Shopify and LS are handled at push time: the higher price always wins."
             : "Takeaway.com sends product names (not SKUs). Map each name to a Lightspeed PLU so orders push without errors. New names appear here as orders come in."
         }
         actions={
@@ -207,6 +207,15 @@ async function ShopifyMappingSection({ loc, filter }: { loc: LocationKey; filter
         LS catalog syncs to Supabase daily via the n8n workflow{" "}
         <code className="font-mono text-[11px]">sync_lightspeed_products</code>;
         Shopify products are fetched live on every page load.
+        <br />
+        <br />
+        <span className="font-semibold text-foreground">Price source-of-truth:</span>{" "}
+        When Shopify and LS prices differ on the same SKU,{" "}
+        <code className="font-mono text-[11px]">push_lightspeed_order</code> always
+        uses <strong>MAX(shopify, ls_catalog)</strong> — the higher of the two wins.
+        Drift between systems doesn&apos;t cause any push failure or need a fix; the
+        LS receipt always prints the correct (higher) price. Catalog drift surfaces as
+        a small italic note under the LS price for visibility, not as a blocking issue.
       </div>
     </>
   );
