@@ -14,6 +14,7 @@ const VALID_FILTERS: ReadonlyArray<MappingStatus | "all" | "issues"> = [
   "all",
   "issues",
   "matched",
+  "auto_split",
   "shopify_only",
   "ls_only",
   "mismatch",
@@ -64,7 +65,7 @@ export default async function MenuPage({
         title={channel === "shopify" ? "Shopify SKU ↔ Lightspeed PLU" : "Takeaway name ↔ Lightspeed PLU"}
         description={
           channel === "shopify"
-            ? "Source of truth: Lightspeed POS catalog. Shopify SKU must match Lightspeed PLU exactly so orders push without errors."
+            ? "Source of truth: Lightspeed POS catalog. Simple SKUs (e.g. F2, B11) must match LS PLU exactly. Compound SKUs (e.g. B11__Veelsaus) auto-split — only the base PLU needs to exist in LS; the suffix prints as a kitchen note."
             : "Takeaway.com sends product names (not SKUs). Map each name to a Lightspeed PLU so orders push without errors. New names appear here as orders come in."
         }
         actions={
@@ -148,6 +149,7 @@ async function ShopifyMappingSection({ loc, filter }: { loc: LocationKey; filter
 
       <MappingStats
         matched={mapping.matched}
+        auto_split={mapping.auto_split}
         shopify_only={mapping.shopify_only}
         ls_only={mapping.ls_only}
         mismatch={mapping.mismatch}
@@ -173,12 +175,37 @@ async function ShopifyMappingSection({ loc, filter }: { loc: LocationKey; filter
 
       <div className="rounded-2xl border border-border bg-muted/30 p-4 text-[11.5px] text-muted-foreground leading-relaxed">
         <span className="font-semibold text-foreground">How this works:</span>{" "}
-        The SKU on a Shopify variant must match the PLU on the Lightspeed product
-        exactly (case-sensitive). If an order arrives with a SKU that doesn&apos;t exist
-        in Lightspeed, the push to POS will fail (error 11401). The Lightspeed catalog
-        is synced to Supabase daily via the n8n workflow{" "}
-        <code className="font-mono text-[11px]">sync_lightspeed_products</code>.
-        Shopify products are fetched live from the Admin REST API on every page load.
+        Shopify SKUs come in two shapes:
+        <br />
+        <br />
+        <span className="font-semibold text-foreground">1. Simple SKU</span> (e.g.{" "}
+        <code className="font-mono text-[11px]">F2</code>,{" "}
+        <code className="font-mono text-[11px]">B11</code>) — must match the LS PLU
+        exactly (case-sensitive). Shows as{" "}
+        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+          Matched
+        </span>{" "}
+        when both sides line up.
+        <br />
+        <br />
+        <span className="font-semibold text-foreground">2. Compound SKU</span> (e.g.{" "}
+        <code className="font-mono text-[11px]">B11__Veelsaus</code>,{" "}
+        <code className="font-mono text-[11px]">B17__ck3__colamenu</code>) — Srova
+        auto-splits on <code className="font-mono text-[11px]">__</code>. The first
+        part is the base PLU sent to LS; remaining parts print as kitchen notes
+        (e.g. &quot;+ Veel saus&quot;). Shows as{" "}
+        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+          Auto-split
+        </span>{" "}
+        when the base PLU exists in LS. <em>Only the base PLU needs to exist in LS</em>{" "}
+        — modifier suffixes can be any free text.
+        <br />
+        <br />
+        If an order arrives with a SKU whose base PLU doesn&apos;t exist in LS, the
+        push fails with error 11401 (DLQ alert appears at <code>/alerts</code>). The
+        LS catalog syncs to Supabase daily via the n8n workflow{" "}
+        <code className="font-mono text-[11px]">sync_lightspeed_products</code>;
+        Shopify products are fetched live on every page load.
       </div>
     </>
   );

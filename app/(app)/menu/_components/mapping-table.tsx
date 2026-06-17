@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, AlertCircle, AlertTriangle, Eye } from "lucide-react";
+import { CheckCircle2, AlertCircle, AlertTriangle, Eye, Split } from "lucide-react";
 import type { ProductMappingRow, MappingStatus } from "@/lib/queries/menu-mapping";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,11 @@ const STATUS_CONFIG: Record<
     label: "Matched",
     tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
     icon: <CheckCircle2 className="h-3 w-3" />,
+  },
+  auto_split: {
+    label: "Auto-split",
+    tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    icon: <Split className="h-3 w-3" />,
   },
   mismatch: {
     label: "Mismatch",
@@ -49,7 +54,8 @@ function applyFilter(
 ): ProductMappingRow[] {
   if (filter === "all") return rows;
   if (filter === "issues") {
-    return rows.filter((r) => r.status !== "matched");
+    // auto_split is good (push will succeed); "issues" only flags actual problems.
+    return rows.filter((r) => r.status !== "matched" && r.status !== "auto_split");
   }
   return rows.filter((r) => r.status === filter);
 }
@@ -72,7 +78,7 @@ export function MappingTable({
     {
       key: "issues",
       label: "Issues only",
-      count: rows.filter((r) => r.status !== "matched").length,
+      count: rows.filter((r) => r.status !== "matched" && r.status !== "auto_split").length,
       tone: "rose",
     },
     {
@@ -92,6 +98,12 @@ export function MappingTable({
       label: "Lightspeed only",
       count: rows.filter((r) => r.status === "ls_only").length,
       tone: "blue",
+    },
+    {
+      key: "auto_split",
+      label: "Auto-split",
+      count: rows.filter((r) => r.status === "auto_split").length,
+      tone: "emerald",
     },
     {
       key: "matched",
@@ -184,7 +196,22 @@ export function MappingTable({
                     className="border-b border-border/60 last:border-b-0 hover:bg-muted/30"
                   >
                     <td className="px-5 py-3 font-mono text-[12px] font-medium">
-                      {row.sku || (
+                      {row.sku ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span>{row.sku}</span>
+                          {row.status === "auto_split" && (
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-normal text-emerald-700 dark:text-emerald-400">
+                              <Split className="h-2.5 w-2.5" />
+                              → {row.base_plu}
+                              {row.modifier_codes.length > 0 && (
+                                <span className="opacity-70">
+                                  {" "}+ {row.modifier_codes.join(" + ")}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                         <span className="text-muted-foreground italic">
                           (no SKU)
                         </span>

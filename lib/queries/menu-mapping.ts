@@ -2,10 +2,17 @@ import { createClient } from '@/lib/supabase/server';
 import { getProductsForLocation, type ShopifyVariant } from '@/lib/shopify';
 import type { LocationKey } from '@/lib/constants';
 
-export type MappingStatus = 'matched' | 'shopify_only' | 'ls_only' | 'mismatch';
+export type MappingStatus =
+  | 'matched'      // Simple SKU matches LS PLU 1:1
+  | 'auto_split'   // Compound SKU (X__Y): base X exists in LS, modifier suffix prints as kitchen note
+  | 'shopify_only' // Shopify SKU (or base PLU) NOT in LS catalog — real problem
+  | 'ls_only'      // LS product not exposed in Shopify
+  | 'mismatch';    // Same SKU both sides but name/price differs
 
 export interface ProductMappingRow {
   sku: string;
+  base_plu: string;           // For compound SKUs: parts[0]. For simple: same as sku.
+  modifier_codes: string[];   // For compound: parts[1..n]. Empty for simple.
   shopify: {
     product_id: number;
     variant_id: number;
@@ -32,6 +39,7 @@ export interface MenuMappingResult {
   total_shopify_variants: number;
   total_ls_products: number;
   matched: number;
+  auto_split: number;
   shopify_only: number;
   ls_only: number;
   mismatch: number;
@@ -88,6 +96,7 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
       total_shopify_variants: 0,
       total_ls_products: lsRows.length,
       matched: 0,
+      auto_split: 0,
       shopify_only: 0,
       ls_only: lsRows.length,
       mismatch: 0,
@@ -95,6 +104,8 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
       last_ls_sync: lastLsSync,
       rows: lsRows.map((r) => ({
         sku: r.sku ?? '',
+        base_plu: r.sku ?? '',
+        modifier_codes: [],
         shopify: null,
         lightspeed: {
           ls_product_id: r.ls_product_id,
@@ -117,45 +128,65 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
     shopifyBySku.set(v.sku, v);
   }
 
-  const allSkus = new Set<string>([...shopifyBySku.keys(), ...lsBySku.keys()]);
+  // Set of Shopify SKUs (and base PLUs after split) that have a corresponding side present.
+  // Used so we don't double-report a LS product as ls_only when a compound Shopify SKU
+  // already references it as its base.
+  const baseShopifyToShopifySku = new Map<string, string>();
+  for (const v of shopifyWithSku) {
+    const base = v.sku.split('__')[0]!;
+    if (!baseShopifyToShopifySku.has(base)) {
+      baseShopifyToShopifySku.set(base, v.sku);
+    }
+  }
+
   const rows: ProductMappingRow[] = [];
 
-  for (const sku of allSkus) {
-    const sv = shopifyBySku.get(sku) ?? null;
-    const lr = lsBySku.get(sku) ?? null;
+  // First pass: every Shopify variant becomes a row.
+  for (const [sku, sv] of shopifyBySku) {
+    const skuParts = sku.split('__');
+    const base = skuParts[0]!;
+    const modifierCodes = skuParts.slice(1);
+    const isCompound = modifierCodes.length > 0;
+
+    // Look up LS by full SKU first (simple SKU exact match); fall back to base PLU (compound).
+    const lr = lsBySku.get(sku) ?? (isCompound ? lsBySku.get(base) ?? null : null);
 
     let status: MappingStatus;
     const mismatchReasons: string[] = [];
 
-    if (sv && lr) {
+    if (isCompound) {
+      if (lr) {
+        // Compound SKU resolves: base exists in LS catalog. Modifier suffix prints as kitchen note.
+        status = 'auto_split';
+      } else {
+        // Base PLU missing — would DLQ at Phase B validate.
+        status = 'shopify_only';
+      }
+    } else if (lr) {
+      // Simple SKU — exact match required for both name and price.
       const lsPrice = Number(lr.price ?? 0);
-      const priceMismatch = pricesDiffer(sv.price, lsPrice);
-      const nameMismatch =
-        sv.product_title.trim().toLowerCase() !== lr.name.trim().toLowerCase();
-
-      if (priceMismatch) mismatchReasons.push('price_differs');
-      if (nameMismatch) mismatchReasons.push('name_differs');
-
+      if (pricesDiffer(sv.price, lsPrice)) mismatchReasons.push('price_differs');
+      if (sv.product_title.trim().toLowerCase() !== lr.name.trim().toLowerCase()) {
+        mismatchReasons.push('name_differs');
+      }
       status = mismatchReasons.length > 0 ? 'mismatch' : 'matched';
-    } else if (sv) {
-      status = 'shopify_only';
     } else {
-      status = 'ls_only';
+      status = 'shopify_only';
     }
 
     rows.push({
       sku,
-      shopify: sv
-        ? {
-            product_id: sv.product_id,
-            variant_id: sv.variant_id,
-            product_title: sv.product_title,
-            variant_title: sv.variant_title,
-            price: sv.price,
-            handle: sv.product_handle,
-            status: sv.product_status,
-          }
-        : null,
+      base_plu: base,
+      modifier_codes: modifierCodes,
+      shopify: {
+        product_id: sv.product_id,
+        variant_id: sv.variant_id,
+        product_title: sv.product_title,
+        variant_title: sv.variant_title,
+        price: sv.price,
+        handle: sv.product_handle,
+        status: sv.product_status,
+      },
       lightspeed: lr
         ? {
             ls_product_id: lr.ls_product_id,
@@ -169,18 +200,41 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
     });
   }
 
+  // Second pass: LS products that have NO corresponding Shopify SKU (neither exact-match nor
+  // as the base of any compound Shopify SKU). These are products only sold in-store.
+  for (const [lsSku, lr] of lsBySku) {
+    if (shopifyBySku.has(lsSku)) continue;          // already shown as matched/mismatch
+    if (baseShopifyToShopifySku.has(lsSku)) continue; // already shown as auto_split parent
+    rows.push({
+      sku: lsSku,
+      base_plu: lsSku,
+      modifier_codes: [],
+      shopify: null,
+      lightspeed: {
+        ls_product_id: lr.ls_product_id,
+        name: lr.name,
+        price: Number(lr.price ?? 0),
+        visible: Boolean(lr.visible),
+      },
+      status: 'ls_only',
+      mismatch_reasons: [],
+    });
+  }
+
   rows.sort((a, b) => {
     const order: Record<MappingStatus, number> = {
       mismatch: 0,
       shopify_only: 1,
       ls_only: 2,
-      matched: 3,
+      auto_split: 3,
+      matched: 4,
     };
     if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
     return a.sku.localeCompare(b.sku);
   });
 
   const matched = rows.filter((r) => r.status === 'matched').length;
+  const autoSplit = rows.filter((r) => r.status === 'auto_split').length;
   const shopifyOnly = rows.filter((r) => r.status === 'shopify_only').length;
   const lsOnly = rows.filter((r) => r.status === 'ls_only').length;
   const mismatch = rows.filter((r) => r.status === 'mismatch').length;
@@ -192,6 +246,7 @@ export async function getMenuMapping(loc: LocationKey): Promise<MenuMappingResul
     total_shopify_variants: shopifyVariants.length,
     total_ls_products: lsRows.length,
     matched,
+    auto_split: autoSplit,
     shopify_only: shopifyOnly,
     ls_only: lsOnly,
     mismatch,

@@ -1,8 +1,9 @@
-import { CheckCircle2, AlertTriangle, AlertCircle, Eye } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, Eye, Split } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MappingStatsProps {
   matched: number;
+  auto_split: number;
   shopify_only: number;
   ls_only: number;
   mismatch: number;
@@ -12,35 +13,44 @@ interface MappingStatsProps {
 
 export function MappingStats({
   matched,
+  auto_split,
   shopify_only,
   ls_only,
   mismatch,
   total_shopify,
   total_lightspeed,
 }: MappingStatsProps) {
-  const totalIssues = shopify_only + ls_only + mismatch;
-  const allClean = totalIssues === 0;
+  void total_lightspeed;
+  const ready = matched + auto_split;
+  const allClean = shopify_only === 0 && mismatch === 0;
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <Stat
-        label="Matched"
-        value={matched}
-        sub={`of ${Math.max(total_shopify, total_lightspeed)} products`}
+        label="Ready to push"
+        value={ready}
+        sub={`of ${total_shopify} Shopify variants`}
         tone={allClean ? "emerald" : "default"}
         icon={<CheckCircle2 className="h-4 w-4" />}
       />
       <Stat
+        label="Auto-split"
+        value={auto_split}
+        sub="compound SKU → base PLU"
+        tone={auto_split > 0 ? "emerald" : "default"}
+        icon={<Split className="h-4 w-4" />}
+      />
+      <Stat
         label="Mismatched"
         value={mismatch}
-        sub="same SKU, different name/price"
+        sub="same SKU, name/price differs"
         tone={mismatch > 0 ? "rose" : "default"}
         icon={<AlertCircle className="h-4 w-4" />}
       />
       <Stat
         label="Shopify only"
         value={shopify_only}
-        sub="not in Lightspeed POS"
+        sub="base PLU not in LS"
         tone={shopify_only > 0 ? "amber" : "default"}
         icon={<AlertTriangle className="h-4 w-4" />}
       />
