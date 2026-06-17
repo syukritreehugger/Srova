@@ -56,6 +56,9 @@ function shopifyChannel(row: StoreIntegrationRow): { tone: Tone; detail: string 
 }
 
 function lsChannel(row: StoreIntegrationRow): { tone: Tone; detail: string } {
+  if (!row.is_active) {
+    return { tone: 'zinc', detail: 'store paused' };
+  }
   if (!row.ls_token_ok || !row.ls_token_expires_at) {
     return { tone: 'rose', detail: 'token expired' };
   }
@@ -75,15 +78,19 @@ function takeawayChannel(row: StoreIntegrationRow): { tone: Tone; detail: string
 }
 
 function shipdayChannel(row: StoreIntegrationRow): { tone: Tone; detail: string } {
+  // Per-store gate trumps global — if store paused, Shipday won't fire.
+  if (!row.is_active) {
+    return { tone: 'zinc', detail: 'store paused' };
+  }
   if (!row.shipday_dispatch_active) {
-    return { tone: 'zinc', detail: 'dispatcher paused' };
+    return { tone: 'zinc', detail: 'dispatcher paused (global)' };
   }
   const n = row.shipday_dispatched_24h;
   if (n === 0) {
     if (row.shipday_last_dispatched_at) {
-      return { tone: 'emerald', detail: `active · last ${relTime(row.shipday_last_dispatched_at)}` };
+      return { tone: 'emerald', detail: `ready · last ${relTime(row.shipday_last_dispatched_at)}` };
     }
-    return { tone: 'emerald', detail: 'active · 0 today' };
+    return { tone: 'emerald', detail: 'ready · Takeaway only' };
   }
   return { tone: 'emerald', detail: `${n} dispatched 24h` };
 }
@@ -102,7 +109,7 @@ export default async function IntegrationsPage() {
       <PageHeader
         eyebrow="Operations · Per-store"
         title="Integration Store"
-        description="Each store has its own pipeline gate. Toggle is the system source of truth — push_lightspeed_order checks this on every order."
+        description="Each store's master toggle gates ALL channels (Lightspeed POS + Shipday dispatch + Takeaway poller). Toggle OFF a store and nothing reaches its POS or driver pool, even if global toggles in /settings are ON."
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
