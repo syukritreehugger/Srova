@@ -4,9 +4,9 @@ import type { PipelineBacklog } from '@/lib/queries/pipeline-health';
 import { cn } from '@/lib/utils';
 
 /**
- * Surface untuk insiden seperti k6 pollution 2026-05-01: 4 hari pipeline diam,
- * dashboard tampak hijau karena hanya melihat canonical_orders. Banner ini baca
- * pgmq queue depth supaya backlog kelihatan tanpa harus klik /pipeline.
+ * Surfaces incidents like the k6 pollution event of 2026-05-01: 4 days of silent
+ * pipeline while the dashboard looked green (it only watched canonical_orders).
+ * This banner reads pgmq queue depth so backlog is visible without clicking /pipeline.
  */
 export function BacklogBanner({
   backlog,

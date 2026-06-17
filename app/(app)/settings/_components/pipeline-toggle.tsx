@@ -43,11 +43,11 @@ export function PipelineToggle({
         <div className="flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold">n8n API belum dikonfigurasi</div>
+            <div className="font-semibold">n8n API not configured</div>
             <div className="mt-1 text-[11.5px] opacity-90">
-              Set <code className="font-mono">N8N_API_URL</code> dan{' '}
-              <code className="font-mono">N8N_API_KEY</code> di <code>.env.local</code>{' '}
-              supaya operator bisa toggle pipeline dari sini.
+              Set <code className="font-mono">N8N_API_URL</code> and{' '}
+              <code className="font-mono">N8N_API_KEY</code> in <code>.env.local</code>{' '}
+              so operators can toggle the pipeline from here.
               {configError ? (
                 <span className="mt-1 block opacity-80">{configError}</span>
               ) : null}
@@ -73,12 +73,12 @@ export function PipelineToggle({
           </span>
           <div>
             <div className="text-[13px] font-semibold">
-              {active ? 'Pipeline aktif' : 'Pipeline di-pause'}
+              {active ? 'Pipeline active' : 'Pipeline paused'}
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {active
-                ? 'Srova memproses webhook Shopify (normalize + push) ke Lightspeed.'
-                : 'Webhook Shopify tetap masuk dan tersimpan, tapi normalize + push ke Lightspeed di-pause.'}
+                ? 'Srova processes Shopify webhooks (normalize + push) to Lightspeed.'
+                : 'Shopify webhooks still come in and are stored, but normalize + push to Lightspeed is paused.'}
             </div>
           </div>
         </div>
@@ -120,11 +120,11 @@ export function PipelineToggle({
           <div className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <div className="font-semibold">Aktifkan pipeline ke Lightspeed?</div>
+              <div className="font-semibold">Activate pipeline to Lightspeed?</div>
               <div className="mt-1 text-[11.5px] opacity-90">
-                Srova akan mulai push order yang masuk ke POS Lightspeed. Pastikan
-                Deliverect untuk store ini sudah dimatikan agar tidak ada duplikat. Cek
-                status cutover dengan tim sebelum lanjut.
+                Srova will start pushing incoming orders to Lightspeed POS. Make sure
+                Deliverect for this store is already turned off to avoid duplicates.
+                Confirm cutover status with the team before continuing.
               </div>
               <div className="mt-3 flex gap-2">
                 <button
@@ -138,7 +138,7 @@ export function PipelineToggle({
                   ) : (
                     <CheckCircle2 className="h-3 w-3" />
                   )}
-                  Ya, aktifkan
+                  Yes, activate
                 </button>
                 <button
                   type="button"
@@ -146,7 +146,7 @@ export function PipelineToggle({
                   disabled={pending}
                   className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-[11.5px] font-medium hover:bg-muted"
                 >
-                  Batal
+                  Cancel
                 </button>
               </div>
             </div>

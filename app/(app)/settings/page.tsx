@@ -45,7 +45,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Configuration"
         title="Settings"
-        description="Pipeline control, secrets, dan feature flags. Operator-friendly toggle untuk pause/resume Srova push ke Lightspeed."
+        description="Pipeline control, secrets, and feature flags. Operator-friendly toggles to pause/resume Srova push to Lightspeed."
       />
 
       <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
@@ -56,7 +56,7 @@ export default async function SettingsPage() {
               Pipeline · Shopify → Srova → Lightspeed
             </div>
             <div className="mt-0.5 text-[14px] font-medium">
-              Toggle global push ke POS
+              Global push toggle to POS
             </div>
           </div>
         </div>
@@ -67,23 +67,23 @@ export default async function SettingsPage() {
             configError={pipelineError}
           />
           <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-[11.5px] text-muted-foreground leading-relaxed">
-            <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
-            tombol ini activate/deactivate dua workflow sekaligus:{' '}
-            <code className="font-mono text-[11px]">poller_q_orders_normalize</code> dan{' '}
-            <code className="font-mono text-[11px]">push_lightspeed_order</code> di n8n.
-            Webhook Shopify <em>tetap masuk</em> dan tersimpan di{' '}
-            <code className="font-mono text-[11px]">raw_orders</code> apa pun statusnya — yang
-            di-pause adalah normalize + push ke POS Lightspeed.
+            <span className="font-semibold text-foreground">How it works:</span>{' '}
+            this button activates/deactivates two workflows at once:{' '}
+            <code className="font-mono text-[11px]">poller_q_orders_normalize</code> and{' '}
+            <code className="font-mono text-[11px]">push_lightspeed_order</code> in n8n.
+            Shopify webhooks <em>still come in</em> and are stored in{' '}
+            <code className="font-mono text-[11px]">raw_orders</code> regardless of state —
+            what gets paused is normalize + push to Lightspeed POS.
           </div>
           <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 text-[12px]">
             <div className="flex-1 pr-4">
               <span className="font-semibold text-foreground">Takeaway.com poller</span>
               <span className="text-muted-foreground"> · ingests orders every 5 min</span>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
-                Independent dari Shopify pipeline — punya workflow sendiri{' '}
-                <code className="font-mono text-[11px]">takeaway_poll_orders</code>. Toggle hanya
-                mengontrol polling — token rotation tetap berjalan, raw_orders Takeaway tidak
-                bertambah saat di-pause.
+                Independent from the Shopify pipeline — has its own workflow{' '}
+                <code className="font-mono text-[11px]">takeaway_poll_orders</code>. The toggle only
+                controls polling — token rotation keeps running, and raw_orders for Takeaway are
+                not appended while paused.
               </div>
             </div>
             <TakeawayToggle initialActive={takeawayPollerActive} configured={configured} />
@@ -99,7 +99,7 @@ export default async function SettingsPage() {
               Shipday dispatch · Takeaway → Shipday driver
             </div>
             <div className="mt-0.5 text-[14px] font-medium">
-              Auto-assign driver untuk Takeaway.com delivery
+              Auto-assign driver for Takeaway.com delivery
             </div>
           </div>
         </div>
@@ -110,18 +110,18 @@ export default async function SettingsPage() {
             configError={shipdayError}
           />
           <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-[11.5px] text-muted-foreground leading-relaxed">
-            <span className="font-semibold text-foreground">Cara kerja:</span>{' '}
-            tombol ini activate/deactivate workflow{' '}
-            <code className="font-mono text-[11px]">push_shipday_order</code>.
-            Hanya order dengan{' '}
+            <span className="font-semibold text-foreground">How it works:</span>{' '}
+            this button activates/deactivates the{' '}
+            <code className="font-mono text-[11px]">push_shipday_order</code> workflow.
+            Only orders with{' '}
             <code className="font-mono text-[11px]">source=&apos;takeaway&apos;</code>{' '}
             +{' '}
             <code className="font-mono text-[11px]">order_type=&apos;delivery&apos;</code>{' '}
-            yang di-push ke Shipday lewat{' '}
-            <code className="font-mono text-[11px]">POST /orders</code>. Shopify delivery
-            TIDAK lewat Shipday (Shopify channel handle dispatch sendiri).
+            are pushed to Shipday via{' '}
+            <code className="font-mono text-[11px]">POST /orders</code>. Shopify deliveries do
+            NOT go through Shipday (the Shopify channel handles its own dispatch).
             Per-store gating (<code className="font-mono text-[11px]">dim_location.is_active</code>)
-            + source filter — dua layer.
+            + source filter — two layers.
           </div>
         </div>
       </div>

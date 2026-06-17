@@ -43,11 +43,11 @@ export function ShipdayToggle({
         <div className="flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold">n8n API belum dikonfigurasi</div>
+            <div className="font-semibold">n8n API not configured</div>
             <div className="mt-1 text-[11.5px] opacity-90">
-              Set <code className="font-mono">N8N_API_URL</code> dan{' '}
-              <code className="font-mono">N8N_API_KEY</code> di <code>.env.local</code>{' '}
-              supaya Shipday dispatch toggle bisa dipakai.
+              Set <code className="font-mono">N8N_API_URL</code> and{' '}
+              <code className="font-mono">N8N_API_KEY</code> in <code>.env.local</code>{' '}
+              so the Shipday dispatch toggle can be used.
               {configError ? (
                 <span className="mt-1 block opacity-80">{configError}</span>
               ) : null}
@@ -73,12 +73,12 @@ export function ShipdayToggle({
           </span>
           <div>
             <div className="text-[13px] font-semibold">
-              {active ? 'Shipday dispatch aktif' : 'Shipday dispatch di-pause'}
+              {active ? 'Shipday dispatch active' : 'Shipday dispatch paused'}
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {active
-                ? 'Order delivery dari Takeaway.com auto-push ke Shipday → driver bisa di-assign. Shopify delivery TIDAK pakai Shipday (channel handle sendiri).'
-                : 'Order delivery Takeaway tidak di-dispatch ke Shipday. Operator harus assign driver manual via Shipday dashboard.'}
+                ? 'Takeaway.com delivery orders auto-push to Shipday → drivers can be assigned. Shopify deliveries do NOT use Shipday (channel handles its own dispatch).'
+                : 'Takeaway delivery orders are not dispatched to Shipday. Operators must assign drivers manually via the Shipday dashboard.'}
             </div>
           </div>
         </div>
@@ -120,12 +120,12 @@ export function ShipdayToggle({
           <div className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <div className="font-semibold">Aktifkan Shipday dispatch?</div>
+              <div className="font-semibold">Activate Shipday dispatch?</div>
               <div className="mt-1 text-[11.5px] opacity-90">
-                Setiap order delivery <strong>dari Takeaway.com</strong> akan di-push
-                ke Shipday. Shopify delivery TIDAK lewat Shipday (channel sendiri).
-                Per-store gating (dim_location.is_active) tetap berlaku — store
-                paused tidak akan dispatch ke Shipday.
+                Every delivery order <strong>from Takeaway.com</strong> will be pushed
+                to Shipday. Shopify deliveries do NOT go through Shipday (own channel).
+                Per-store gating (dim_location.is_active) still applies — paused
+                stores won&apos;t dispatch to Shipday.
               </div>
               <div className="mt-3 flex gap-2">
                 <button
@@ -139,7 +139,7 @@ export function ShipdayToggle({
                   ) : (
                     <CheckCircle2 className="h-3 w-3" />
                   )}
-                  Ya, aktifkan
+                  Yes, activate
                 </button>
                 <button
                   type="button"
@@ -147,7 +147,7 @@ export function ShipdayToggle({
                   disabled={pending}
                   className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-[11.5px] font-medium hover:bg-muted"
                 >
-                  Batal
+                  Cancel
                 </button>
               </div>
             </div>

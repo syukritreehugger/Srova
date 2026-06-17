@@ -172,13 +172,13 @@ async function ShopifyMappingSection({ loc, filter }: { loc: LocationKey; filter
       />
 
       <div className="rounded-2xl border border-border bg-muted/30 p-4 text-[11.5px] text-muted-foreground leading-relaxed">
-        <span className="font-semibold text-foreground">Bagaimana ini bekerja:</span>{" "}
-        SKU di Shopify variant harus persis sama (case-sensitive) dengan PLU di
-        Lightspeed product. Kalau order masuk dengan SKU yang tidak ada di
-        Lightspeed, push ke POS akan gagal (error 11401). Lightspeed catalog
-        di-sync ke Supabase setiap hari via n8n workflow{" "}
+        <span className="font-semibold text-foreground">How this works:</span>{" "}
+        The SKU on a Shopify variant must match the PLU on the Lightspeed product
+        exactly (case-sensitive). If an order arrives with a SKU that doesn&apos;t exist
+        in Lightspeed, the push to POS will fail (error 11401). The Lightspeed catalog
+        is synced to Supabase daily via the n8n workflow{" "}
         <code className="font-mono text-[11px]">sync_lightspeed_products</code>.
-        Shopify products diambil live dari Admin REST API setiap halaman ini di-load.
+        Shopify products are fetched live from the Admin REST API on every page load.
       </div>
     </>
   );
@@ -211,12 +211,12 @@ async function TakeawayMappingSection({ loc }: { loc: LocationKey }) {
       <TakeawayMappingTable rows={mapping.rows} lsProducts={lsProducts} />
 
       <div className="rounded-2xl border border-border bg-muted/30 p-4 text-[11.5px] text-muted-foreground leading-relaxed">
-        <span className="font-semibold text-foreground">Bagaimana ini bekerja:</span>{" "}
-        Takeaway.com tidak punya konsep SKU — mereka kirim nama produk saja. Setiap nama
-        produk yang muncul di order baru otomatis ditambahkan ke daftar ini dengan status
-        Unmapped. Admin pilih PLU Lightspeed yang sesuai dan klik Save. Setelah dimapping,
-        order berikutnya dengan nama produk yang sama akan langsung di-resolve ke PLU itu
-        dan bisa di-push ke Lightspeed.
+        <span className="font-semibold text-foreground">How this works:</span>{" "}
+        Takeaway.com has no concept of SKU — they only send the product name. Every
+        new product name that appears in an order is automatically added to this list
+        with status Unmapped. The admin picks the matching Lightspeed PLU and clicks
+        Save. Once mapped, the next order with the same product name resolves to that
+        PLU instantly and can be pushed to Lightspeed.
       </div>
     </>
   );
