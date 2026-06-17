@@ -31,10 +31,11 @@ function readTotalCents(payment: unknown): number {
 }
 
 interface CustomerJson {
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  phone?: string;
+  name?: string;          // canonical schema 1.1 — single full-name field
+  first_name?: string;    // legacy schema 1.0
+  last_name?: string;     // legacy schema 1.0
+  email?: string | null;
+  phone?: string | null;
 }
 
 function locName(key: string): string {
@@ -99,7 +100,10 @@ export default async function OrderDetailPage({
     unit_price_cents?: number;
   }>;
 
+  // canonical schema 1.1 uses `name` (Shopify/Takeaway normalize both write this).
+  // Fall through to legacy first_name + last_name for any pre-1.1 rows, then email.
   const customerName =
+    customer.name ||
     [customer.first_name, customer.last_name].filter(Boolean).join(' ') ||
     customer.email ||
     'Guest';
