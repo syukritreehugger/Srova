@@ -1,5 +1,4 @@
 import { Check, GitBranch, Lock } from "lucide-react"
-import { OnDevBadge } from "@/components/dashboard/on-dev-badge"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 import { getWorkflow, isN8nConfigured, POLLER_NORMALIZE_ID, LS_PUSHER_ID, TAKEAWAY_POLLER_ID } from "@/lib/n8n"
@@ -86,12 +85,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <OnDevBadge
-        variant="banner"
-        reason="Secret management and access controls are coming later. For now, only the pipeline toggle above is active."
-      />
-
-      <div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
+<div className="card-elevated overflow-hidden rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
             <Lock className="h-3.5 w-3.5 text-muted-foreground" />

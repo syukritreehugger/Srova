@@ -123,7 +123,10 @@ function getMockStats(): DashboardStats {
 export async function getDashboardStats(
   loc?: LocationKey
 ): Promise<DashboardStats> {
-  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return getMockStats();
   }
 

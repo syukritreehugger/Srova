@@ -34,11 +34,6 @@ export function MenuSyncStatus({
             Lightspeed → Shopify
           </div>
         </div>
-        {!hasData && (
-          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            On Dev
-          </span>
-        )}
       </div>
 
       {!hasData ? (

@@ -49,6 +49,7 @@ async function n8n<T>(
         ...(init?.headers ?? {}),
       },
       cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');

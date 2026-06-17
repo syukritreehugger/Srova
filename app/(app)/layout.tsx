@@ -1,17 +1,38 @@
 import type React from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Topbar } from "@/components/dashboard/topbar"
-import { getIntegrationHealth } from "@/lib/queries/health"
+import { getIntegrationHealth, type IntegrationRow } from "@/lib/queries/health"
 import { createClient } from "@/lib/supabase/server"
 
+async function safeHealth(): Promise<IntegrationRow[]> {
+  try {
+    return await getIntegrationHealth()
+  } catch (err) {
+    console.error("[layout] getIntegrationHealth failed:", err)
+    return []
+  }
+}
+
+async function safeAlertCount(): Promise<number> {
+  try {
+    const sb = await createClient()
+    const { count } = await sb
+      .from("dlq_alerts")
+      .select("id", { count: "exact", head: true })
+      .is("resolved_at", null)
+    return count ?? 0
+  } catch (err) {
+    console.error("[layout] alertCount query failed:", err)
+    return 0
+  }
+}
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [integrations, dlqRes] = await Promise.all([
-    getIntegrationHealth(),
-    createClient().then((sb) =>
-      sb.from("dlq_alerts").select("id", { count: "exact", head: true }).is("resolved_at", null)
-    ),
+  const [integrations, alertCount] = await Promise.all([
+    safeHealth(),
+    safeAlertCount(),
   ])
-  const alertCount = dlqRes.count ?? 0
+
   const worst = integrations.reduce<"operational" | "degraded" | "down" | "investigating">(
     (acc, i) => {
       if (i.status === "down") return "down"

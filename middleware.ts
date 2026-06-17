@@ -10,7 +10,10 @@ function requiresMFA(_role: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  if (process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return NextResponse.next({ request });
   }
 

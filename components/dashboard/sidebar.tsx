@@ -30,7 +30,7 @@ interface NavItem {
   onDev?: boolean
 }
 
-const NAV: { label: string; items: NavItem[] }[] = [
+const NAV_ALL: { label: string; items: NavItem[] }[] = [
   {
     label: "Pipeline",
     items: [
@@ -61,6 +61,11 @@ const NAV: { label: string; items: NavItem[] }[] = [
     ],
   },
 ]
+
+const NAV = NAV_ALL.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !item.onDev),
+})).filter((group) => group.items.length > 0)
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/"

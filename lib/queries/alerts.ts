@@ -17,7 +17,10 @@ export interface AlertRow {
 }
 
 export async function getRecentAlerts(limit = 20, loc?: string): Promise<AlertRow[]> {
-  if (process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1') {
+  if (
+    process.env['NEXT_PUBLIC_USE_MOCK_DATA'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return [];
   }
   const supabase = await createClient();
