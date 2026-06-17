@@ -1,0 +1,926 @@
+{
+  "name": "(N)takeaway order",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -7216,
+        -304
+      ],
+      "id": "ea99963d-cbaf-42cb-a369-49215621bdbe",
+      "name": "Schedule - Every 30 Min"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "list",
+          "cachedResultName": "BurgerBaron Operation Sheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 131076697,
+          "mode": "list",
+          "cachedResultName": "Sales Log"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -6992,
+        -304
+      ],
+      "id": "82348e79-9b94-4ec7-b140-b3dc75497455",
+      "name": "Get Existing Order IDs",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "value": "_Aliases",
+          "__rl": true,
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -6768,
+        -304
+      ],
+      "id": "0aca1632-7df7-4e89-9536-e3b96b722931",
+      "name": "Read Aliases",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "value": "_Recipes",
+          "__rl": true,
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -6544,
+        -304
+      ],
+      "id": "c43ac6fd-9eb4-4260-892f-05e9fc24b506",
+      "name": "Read Recipes",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://partner-hub.justeattakeaway.com/auth/realms/restaurant/protocol/openid-connect/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "client_id",
+              "value": "live-orders"
+            },
+            {
+              "name": "refresh_token",
+              "value": "=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI0ZDNmNjNjYS02ZWVhLTRhZjItYjBmOC1kNzYyNzYzMzU4ZGMifQ.eyJleHAiOjE3Nzc4NzE5MDksImlhdCI6MTc3NTI3OTkwOSwianRpIjoiOTZlMDQ2NTMtZmNmZC1jOTkwLWMyMDUtYWU2OTEzODYwZjUwIiwiaXNzIjoiaHR0cHM6Ly9wYXJ0bmVyLWh1Yi5qdXN0ZWF0dGFrZWF3YXkuY29tL2F1dGgvcmVhbG1zL3Jlc3RhdXJhbnQiLCJhdWQiOiJodHRwczovL3BhcnRuZXItaHViLmp1c3RlYXR0YWtlYXdheS5jb20vYXV0aC9yZWFsbXMvcmVzdGF1cmFudCIsInN1YiI6IjdmMWZjYzE0LTRmNzEtNDRhOC1hNDhhLTg5OWY2MzUyOGViMyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsaXZlLW9yZGVycyIsInNpZCI6ImloMGN2akNYRzdfTHJ2bi1TNm5ncGJYOSIsInNjb3BlIjoicHJvZmlsZSBiYXNpYyBsaXZlLW9yZGVycyByb2xlcyBvcGVuaWQgcmVzdGF1cmFudC1hdHRyaWJ1dGVzIGVtYWlsIn0.2Nv5ljEQGMq80FfJgrEJQF6qf9Stg7ilNLMVulhEQFfkaB5uGYZbY_Ocmkz4Ad18ebVck2q_nFlEPdtiVN8PxQ"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -5872,
+        -304
+      ],
+      "id": "9105c749-bd15-4b0f-aa05-f764fd4f21ec",
+      "name": "Get Fresh Access Token",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19fd793d-8276-44e8-96f8-14870b205be9",
+              "leftValue": "={{ $json.access_token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5648,
+        -304
+      ],
+      "id": "67839a0d-f7fc-42ab-bfcd-41c1bd9a7417",
+      "name": "Token Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://live-orders-api.takeaway.com/api/orders/history?date_from={{ $now.setZone('Europe/Brussels').minus({ days: 2 }).startOf('day').toUTC().toFormat(\"yyyy-MM-dd'T'HH:mm:ss'Z'\") }}&date_to={{ $now.setZone('Europe/Brussels').endOf('day').toUTC().toFormat(\"yyyy-MM-dd'T'HH:mm:ss'Z'\") }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Fresh Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -5424,
+        -304
+      ],
+      "id": "78cc830f-a4b6-42a0-8cc0-f4864bcc5621",
+      "name": "Get Todays Orders"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83906939-6e96-4410-affb-26eb5d042abd",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "delivered",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5200,
+        -304
+      ],
+      "id": "c115df2f-4885-4302-9305-5b0deef0b794",
+      "name": "Has Orders"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -4976,
+        -304
+      ],
+      "id": "275f77ce-9733-4072-b7eb-9f763b45b2d1",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "=https://live-orders-api.takeaway.com/api/orders/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Fresh Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -4752,
+        -400
+      ],
+      "id": "3d6a04d8-81f3-4d71-b6dd-afeaf7fc0562",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=products",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "public_reference, placed_date, restaurant_total",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -4528,
+        -400
+      ],
+      "id": "4b9c05c1-b4d9-4e42-9e45-38dc001d7c80",
+      "name": "Split Out products"
+    },
+    {
+      "parameters": {
+        "jsCode": "const existingOrderIDs = $('Get Existing Order IDs').all()\n  .map(item => item.json['Order ID']);\n\nconst aliasMap = {};\n$('Read Aliases').all().forEach(r => {\n  if (r.json['Product Name']) aliasMap[r.json['Product Name'].toLowerCase()] = r.json['Recipe Name'];\n});\n\nconst recipeMap = {};\n$('Read Recipes').all().forEach(r => {\n  if (r.json['Name']) recipeMap[r.json['Name']] = {\n    foodCost: Number(r.json['FoodCost']) || 0,\n    batch:    Number(r.json['Batch'])    || 1\n  };\n});\n\nconst seenOrderIDs = new Set();\n\nreturn items.map(item => {\n  const order   = item.json;\n  const product = order.products;\n\n  const placed_date = new Date(order.placed_date).toLocaleDateString('en-US', {\n    month: '2-digit', day: '2-digit', year: 'numeric'\n  }).replace(/\\//g, '-');\n\n  const isFirstRow = !seenOrderIDs.has(order.public_reference);\n  seenOrderIDs.add(order.public_reference);\n\n  const qty        = Number(product.quantity) || 1;\n  const recipeName = aliasMap[product.name.toLowerCase()] || '';\n  const recipe     = recipeName ? recipeMap[recipeName] : null;\n  const foodCost   = recipe ? Math.round((recipe.foodCost / recipe.batch) * qty * 1000) / 1000 : '';\n\n  return {\n    json: {\n      order_id:     order.public_reference,\n      placed_date:  placed_date,\n      product_name: product.name,\n      store:        'Takeaway',\n      qty:          qty,\n      unit_price:   Number(product.amount) || 0,\n      order_total:  isFirstRow ? order.restaurant_total : '',\n      food_cost:    foodCost\n    }\n  };\n}).filter(item => !existingOrderIDs.includes(item.json.order_id));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4304,
+        -400
+      ],
+      "id": "62bb598b-dac9-4700-99c7-19821150c41d",
+      "name": "flatten output",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "list",
+          "cachedResultName": "BurgerBaron Operation Sheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 131076697,
+          "mode": "list",
+          "cachedResultName": "Sales Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.placed_date }}",
+            "Order ID": "={{ $json.order_id }}",
+            "Source": "={{ $json.store }}",
+            "Product Name": "={{ $json.product_name }}",
+            "Qty": "={{ $json.qty }}",
+            "Unit Price(€)": "={{ $json.unit_price }}",
+            "Revenue(€)": "={{ $json.order_total }}",
+            "Food Cost(€)": "={{ $json.food_cost }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order ID",
+              "displayName": "Order ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product Name",
+              "displayName": "Product Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Qty",
+              "displayName": "Qty",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Unit Price(€)",
+              "displayName": "Unit Price(€)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipe Name",
+              "displayName": "Recipe Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Revenue(€)",
+              "displayName": "Revenue(€)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Food Cost(€)",
+              "displayName": "Food Cost(€)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Net Margin(€)",
+              "displayName": "Net Margin(€)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Net Margin %",
+              "displayName": "Net Margin %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4080,
+        -592
+      ],
+      "id": "bce032b3-c00e-4312-b771-7b404748e709",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -4080,
+        -208
+      ],
+      "id": "fc45028f-c56e-44a4-8d20-d207502459d1",
+      "name": "Wait",
+      "webhookId": "0f78bef4-a346-4138-9262-a66d51ac3a08"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "value": "_RecipeIngredients",
+          "__rl": true,
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -6320,
+        -304
+      ],
+      "id": "0fc057cc-b772-4a9f-be95-e87a7f79f763",
+      "name": "Read Recipe Ingredients",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "value": "Stock",
+          "__rl": true,
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -6096,
+        -304
+      ],
+      "id": "7f9b081c-0765-4f24-8320-d243f1dc7b2a",
+      "name": "Read Stock",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Skip if no items (empty output from flatten)\nif (!items.length || (items.length === 1 && !items[0].json.order_id)) return [];\n\n// Build alias map\nconst aliasMap = {};\n$('Read Aliases').all().forEach(r => {\n  if (r.json['Product Name']) aliasMap[r.json['Product Name'].toLowerCase()] = r.json['Recipe Name'];\n});\n\n// Build recipe ingredients map: recipeName → [{ ingredient, qty }]\nconst recIngMap = {};\n$('Read Recipe Ingredients').all().forEach(r => {\n  const name = r.json['Recipe Name'] || r.json['Ingredient'] ? null : null;\n  // _RecipeIngredients has: RecipeID, Ingredient, Quantity\n  // We need to match by recipe name via _Recipes\n});\n\n// Build recipeId → name map\nconst recipeIdMap = {};\n$('Read Recipes').all().forEach(r => {\n  if (r.json['RecipeID']) recipeIdMap[String(r.json['RecipeID'])] = r.json['Name'];\n});\n\n// Build recipeName → ingredients\nconst recipeIngByName = {};\n$('Read Recipe Ingredients').all().forEach(r => {\n  const recipeId  = String(r.json['RecipeID']);\n  const recipeName = recipeIdMap[recipeId];\n  if (!recipeName) return;\n  if (!recipeIngByName[recipeName]) recipeIngByName[recipeName] = [];\n  recipeIngByName[recipeName].push({\n    ingredient: r.json['Ingredient'],\n    qty:        Number(r.json['Quantity']) || 0\n  });\n});\n\n// Aggregate deductions per ingredient from all products in this batch\nconst deductions = {}; // ingredient → total qty to deduct\n\nitems.forEach(item => {\n  const productName = (item.json.product_name || '').toLowerCase();\n  const orderedQty  = Number(item.json.qty) || 1;\n  const recipeName  = aliasMap[productName] || '';\n  if (!recipeName) return;\n  const ings = recipeIngByName[recipeName] || [];\n  ings.forEach(ing => {\n    if (!deductions[ing.ingredient]) deductions[ing.ingredient] = 0;\n    deductions[ing.ingredient] += ing.qty * orderedQty;\n  });\n});\n\nif (!Object.keys(deductions).length) return [{ json: { skip: true } }];\n\n// Read current stock and calculate new values\nconst stockRows = $('Read Stock').all();\nconst updates = [];\n\nstockRows.forEach(r => {\n  const ingName = (r.json['Ingredient'] || '').toString().trim();\n  if (!ingName || ingName === 'Donotdelete') return;\n  const deductQty = deductions[ingName];\n  if (!deductQty) return;\n\n  const currentStock = Number(r.json['Current Stock']) || 0;\n  const newStock     = Math.round((currentStock - deductQty) * 1000) / 1000;\n  const minForecast  = Number(r.json['Min Forecast']) || 0;\n  const type         = (r.json['Type'] || '').toLowerCase();\n\n  let actionState = 'Good';\n  if (newStock < minForecast) {\n    actionState = type === 'sauce' ? 'Make Sauce Batch' : 'Need Order';\n  }\n\n  updates.push({ json: {\n    row_number:      r.json['row_number'],\n    'Current Stock': newStock,\n    'Action State':  actionState\n  }});\n});\n\nreturn updates.length ? updates : [{ json: { skip: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4080,
+        -400
+      ],
+      "id": "c48d47ff-0530-4c27-b6c0-b50093aed081",
+      "name": "Calculate Stock Deductions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "not-skip",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3856,
+        -400
+      ],
+      "id": "fbaa9eb6-f6f6-4c0d-8496-643eb1016a55",
+      "name": "Has Deductions?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1MYcuye5sQAdKBEXsOrVel3lHGq7qDztcUwEQ9pl2XDw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Stock",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "Current Stock": "={{ $json['Current Stock'] }}",
+            "Action State": "={{ $json['Action State'] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Ingredient",
+              "displayName": "Ingredient",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Unit",
+              "displayName": "Unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Current Stock",
+              "displayName": "Current Stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Min Forecast",
+              "displayName": "Min Forecast",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Action State",
+              "displayName": "Action State",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Audit",
+              "displayName": "Last Audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3632,
+        -400
+      ],
+      "id": "822db447-b226-483f-bbe1-9ca5b3d84736",
+      "name": "Update Stock",
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lCeDP1HlJu9kM7qD",
+          "name": "Google Auth"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule - Every 30 Min": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Order IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Order IDs": {
+      "main": [
+        [
+          {
+            "node": "Read Aliases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Aliases": {
+      "main": [
+        [
+          {
+            "node": "Read Recipes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Recipes": {
+      "main": [
+        [
+          {
+            "node": "Read Recipe Ingredients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Fresh Access Token": {
+      "main": [
+        [
+          {
+            "node": "Token Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Todays Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Todays Orders": {
+      "main": [
+        [
+          {
+            "node": "Has Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Orders": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out products": {
+      "main": [
+        [
+          {
+            "node": "flatten output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "flatten output": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calculate Stock Deductions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Recipe Ingredients": {
+      "main": [
+        [
+          {
+            "node": "Read Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Stock": {
+      "main": [
+        [
+          {
+            "node": "Get Fresh Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Stock Deductions": {
+      "main": [
+        [
+          {
+            "node": "Has Deductions?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Deductions?": {
+      "main": [
+        [
+          {
+            "node": "Update Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f09bd0ad-137b-47b0-a377-c715cb554431",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0de33d9ef11aff0db11451425e23b1bfe1f42fa34c58485ccd11da4d3fcefabb"
+  },
+  "id": "YFmy3THXqVEav8HD",
+  "tags": []
+}

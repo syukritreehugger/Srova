@@ -39,7 +39,7 @@ Ref: Shopify - #4720
 TE BETALEN: CASH €18.50
 - Frietje speciaal: zonder zout
 KLANT: Aub allergie pinda
-─ via Srova Data ─
+-- via Srova Data --
 ```
 
 Lines:
@@ -48,7 +48,9 @@ Lines:
 2. **Order reference** + pay-at-door warning (existing behavior preserved)
 3. **Item-level notes** (Takeaway modifier specs, etc.)
 4. **Customer note** prefixed `KLANT:` (Belgian Nederlands convention)
-5. **Footer attribution** in `─ ... ─` box for "powered by" feel
+5. **Footer attribution** in `-- ... --` ASCII dashes for "powered by" feel
+   (originally used `─` U+2500 box-drawing — switched to ASCII for
+   bulletproof printer firmware compat on go-live day)
 
 ## Why this design
 
@@ -65,8 +67,10 @@ printer guides):
    `description` and `note` fields populated by our push_lightspeed_order
    workflow.
 
-3. **ASCII safety** — `·` (middle dot) and `─` (box drawing) are widely
-   supported on EU thermal printers. No emoji (firmware compatibility risk).
+3. **ASCII safety** — `·` (middle dot, U+00B7) is in Latin-1 and supported
+   on virtually all EU thermal printers. Footer uses `--` ASCII dashes
+   (originally `─` U+2500 box-drawing but switched to ASCII for bulletproof
+   compat with older / generic printer firmware). No emoji.
 
 4. **Belgian localization** — `KLANT` (Nederlands), `TE BETALEN` (existing),
    `via Srova Data` reads naturally in NL + FR.
