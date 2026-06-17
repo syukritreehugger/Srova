@@ -16,7 +16,7 @@
 --     normalized, pushed to LS POS Frietchalet (LS receipt 36259312 / 474374422).
 --   - Joef confirmed only one receipt appeared — Deliverect did NOT duplicate-push
 --     because Lightspeed iPad app was closed (Deliverect requires iPad app running;
---     FrituurOS does not). See docs/plans/2026-05-18-deliverect-vs-frituuros-architectural-advantage.md
+--     Srova does not). See docs/plans/2026-05-18-deliverect-vs-srova-architectural-advantage.md
 --
 -- All operations below were applied via direct SQL on 2026-05-18. This file captures
 -- them for git history. Idempotent (safe to re-run).

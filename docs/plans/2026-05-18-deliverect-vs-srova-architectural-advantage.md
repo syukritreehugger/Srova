@@ -1,7 +1,7 @@
-# Deliverect vs FrituurOS — Architectural Advantage
+# Deliverect vs Srova — Architectural Advantage
 
 > Discovered 2026-05-18 during real e2e test (Joef's order XKVTVW at Frietchalet).
-> This doc captures a critical insight about why FrituurOS pipeline is **strictly better** than Deliverect for the Takeaway → Lightspeed integration.
+> This doc captures a critical insight about why Srova pipeline is **strictly better** than Deliverect for the Takeaway → Lightspeed integration.
 
 ## The Discovery
 
@@ -37,14 +37,14 @@ Lightspeed iPad app receives → creates receipt in POS
 
 **Hidden operational cost:** Lost orders during any iPad downtime. Restaurant may never know orders came in until customer complains. Real-world frequency unknown but plausible (Wi-Fi blips, charging cycles, manual app closes).
 
-### FrituurOS (our pipeline)
+### Srova (our pipeline)
 
 ```
 Takeaway customer pays
    ↓
 Takeaway stores order in their backend API
    ↓
-FrituurOS poller (n8n, 5-min schedule) → fetches /api/orders/history
+Srova poller (n8n, 5-min schedule) → fetches /api/orders/history
    ↓
 Pipeline normalizes → enqueues to pgmq
    ↓
@@ -66,22 +66,22 @@ Next time iPad syncs/opens, receipt is already there
 
 | Test scenario | Result |
 |---|---|
-| iPad active, order placed | Both Deliverect + FrituurOS push (would create 2 LS receipts) |
-| iPad inactive (Joef's XKVTVW test) | Only FrituurOS pushed (Deliverect silently skipped) |
+| iPad active, order placed | Both Deliverect + Srova push (would create 2 LS receipts) |
+| iPad inactive (Joef's XKVTVW test) | Only Srova pushed (Deliverect silently skipped) |
 
 ## Implications
 
 ### For migration strategy
 
-The cutover from Deliverect → FrituurOS is **strictly an improvement**, not a risk:
-1. FrituurOS handles all orders, regardless of iPad state
+The cutover from Deliverect → Srova is **strictly an improvement**, not a risk:
+1. Srova handles all orders, regardless of iPad state
 2. No "downgrade" in any scenario
 3. Cashier still sees orders in LS POS as before, but more reliably
 
 ### For sales / partner pitch
 
-If positioning FrituurOS commercially:
-- "Lose orders when iPad is off? Not with FrituurOS — pushes directly to Lightspeed cloud, doesn't depend on your POS device state."
+If positioning Srova commercially:
+- "Lose orders when iPad is off? Not with Srova — pushes directly to Lightspeed cloud, doesn't depend on your POS device state."
 - Reliability metric: percentage of orders successfully pushed during operational hours. Deliverect has hidden gap.
 
 ### For monitoring
@@ -90,7 +90,7 @@ A future enhancement: track orders that **should have** been pushed by Deliverec
 
 ## Implementation Notes
 
-The reason FrituurOS doesn't have this dependency:
+The reason Srova doesn't have this dependency:
 - Uses direct Lightspeed L-Series REST API (`lightspeedapis.com/resto/rest/onlineordering/...`)
 - Calls `POST /establishmentorder` with OAuth bearer token
 - Lightspeed cloud creates the receipt server-side, regardless of which devices have the app open
