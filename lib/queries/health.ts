@@ -25,8 +25,10 @@ export interface MenuSyncRow {
 }
 
 const SHOPIFY_WEBHOOK_IDS = [
+  'OmJqbQdD0gmABLxr', // shopify_webhook_order_create  ← primary intake
   '2ESmow3WjbgLZVdN', // shopify_webhook_order_updated
   'F1ISBeZxtNJ8DBc4', // shopify_webhook_order_cancelled
+  'UhXAnsub1l6t39uv', // shopify_webhook_order_fulfilled
   '8DzRy1GjkwvDDrnh', // shopify_webhook_refund_create
 ];
 
