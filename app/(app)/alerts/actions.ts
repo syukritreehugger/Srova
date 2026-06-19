@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { assertManagement } from '@/lib/auth/assert';
 
 export type DlqActionResult = { ok: true } | { ok: false; error: string };
 
@@ -30,6 +31,8 @@ async function audit(params: {
 }
 
 async function requireUser() {
+  const auth = await assertManagement();
+  if (!auth.ok) throw new Error(auth.error);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthenticated');

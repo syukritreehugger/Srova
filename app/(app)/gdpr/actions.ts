@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { assertManagement } from '@/lib/auth/assert';
 
 export interface DsarExportResult {
   email: string;
@@ -18,6 +19,8 @@ export type DsarActionResult =
   | { ok: false; error: string };
 
 export async function exportDsar(email: string): Promise<DsarActionResult> {
+  const auth = await assertManagement();
+  if (!auth.ok) return { ok: false, error: auth.error };
   if (!email || !email.includes('@')) {
     return { ok: false, error: 'Valid email required' };
   }
@@ -72,6 +75,8 @@ export async function exportDsar(email: string): Promise<DsarActionResult> {
 export async function deleteDsar(
   email: string
 ): Promise<{ ok: true; redacted: number } | { ok: false; error: string }> {
+  const auth = await assertManagement();
+  if (!auth.ok) return { ok: false, error: auth.error };
   if (!email || !email.includes('@')) {
     return { ok: false, error: 'Valid email required' };
   }
