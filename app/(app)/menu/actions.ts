@@ -3,12 +3,41 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+
+async function assertManagement(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  if (
+    process.env['NEXT_PUBLIC_DEV_SKIP_AUTH'] === '1' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
+    return { ok: true };
+  }
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+  const role =
+    (user.app_metadata?.['role'] as string | undefined) ?? 'management';
+  if (role !== 'management' && role !== 'admin') {
+    return { ok: false, error: 'Insufficient role' };
+  }
+  const hdrs = await headers();
+  if (hdrs.get('origin') === null) {
+    return { ok: false, error: 'Missing Origin header' };
+  }
+  return { ok: true };
+}
 
 export async function updateTakeawayPluMapping(
   id: number,
   ls_plu: string,
   ls_product_name: string
 ) {
+  const auth = await assertManagement();
+  if (!auth.ok) throw new Error(auth.error);
   if (!ls_plu) throw new Error('ls_plu is required');
 
   const supabase = await createClient();
@@ -51,6 +80,9 @@ export async function updateTakeawayPluMapping(
 }
 
 export async function confirmTakeawayAutoMatch(id: number) {
+  const auth = await assertManagement();
+  if (!auth.ok) throw new Error(auth.error);
+
   const supabase = await createClient();
   const { error } = await supabase
     .from('takeaway_plu_map')
@@ -64,11 +96,10 @@ export async function confirmTakeawayAutoMatch(id: number) {
 export async function confirmAllAutoMatchedTakeaway(
   locationKey: string
 ): Promise<{ ok: true; confirmed: number } | { ok: false; error: string }> {
+  const auth = await assertManagement();
+  if (!auth.ok) return { ok: false, error: auth.error };
   if (!locationKey) return { ok: false, error: 'location_key required' };
 
-  // Service-role: takeaway_plu_map has service-role-only UPDATE policy.
-  // Authorization gate: only management/admin can call this (UI route is auth-gated;
-  // for defence-in-depth tighten via a server-action role check if needed later).
   const service = createServiceClient();
   const { error, count } = await service
     .from('takeaway_plu_map')
