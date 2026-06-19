@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_PATH = /^\/(?!login|mfa|api\/auth|_next|favicon\.ico)(.*)/;
+const PROTECTED_PATH = /^\/(?!login|mfa|api\/auth|api\/health|_next|favicon\.ico)(.*)/;
 const AUTH_PATHS = new Set(['/login', '/mfa']);
 
 function requiresMFA(_role: string): boolean {
