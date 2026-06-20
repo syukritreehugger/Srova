@@ -10,6 +10,9 @@ export const STAGE_LABELS: Record<string, string> = {
   takeaway_token_expiry: 'Takeaway token refresh',
   takeaway_poll_error: 'Takeaway poll failure',
   takeaway_plu_unmapped: 'Takeaway PLU unmapped',
+  takeaway_poll_silent: 'Takeaway silent skip',
+  takeaway_poll_silent_observed: 'Takeaway race condition (audit)',
+  normalize_orphan: 'Normalize stuck (orphan)',
 };
 
 export interface ErrorJson {

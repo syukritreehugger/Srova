@@ -20,6 +20,12 @@ describe('humanStage', () => {
     expect(humanStage('takeaway_plu_unmapped')).toBe('Takeaway PLU unmapped');
   });
 
+  it('maps new takeaway poll and orphan normalize labels', () => {
+    expect(humanStage('takeaway_poll_silent')).toBe('Takeaway silent skip');
+    expect(humanStage('takeaway_poll_silent_observed')).toBe('Takeaway race condition (audit)');
+    expect(humanStage('normalize_orphan')).toBe('Normalize stuck (orphan)');
+  });
+
   it('is case-insensitive', () => {
     expect(humanStage('Q_ORDERS_PUSH_LS')).toBe('Push to Lightspeed');
     expect(humanStage('LS_TOKEN_EXPIRY')).toBe('LS token refresh');
