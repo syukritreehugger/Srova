@@ -39,9 +39,9 @@ Three measured reasons, all still true on 2026-09-10:
 Answers a JSON **array with one object per candidate**, in `location_key` order:
 `location_key`, `bestaat`, `actief`, `deliverect_slikt`, `ontbrekende_plus[]`, `aanbiedbaar`.
 A candidate is offerable when it exists in `dim_location`, is active, would not be swallowed by
-the `deliverect_yield` branch, and holds every PLU of the order. An unknown `canonical_id`
-fails the execution ("no such order") instead of answering an empty list, which would read like
-"no shop can serve it".
+the `deliverect_yield` branch, and holds every PLU of the order. An unknown `canonical_id` is
+answered as `{ ok: false, reden: "order_bestaat_niet" }` rather than an empty list, which would
+read like "no shop can serve it".
 
 **`action: "move"`** - do it.
 
@@ -49,14 +49,40 @@ fails the execution ("no such order") instead of answering an empty list, which 
 { "action": "move", "canonical_id": "<uuid>", "target_location_key": "LOC_BERLARE" }
 ```
 
-Answers an **array holding exactly one object** (never zero - an empty result throws instead):
-`{ ok: true, canonical_id, external_ref, msg_id, van_location_key, oude_status,
-oud_shipday_order_id }`, describing the NEW order. There is no `van_naam` field: the origin
-shop's name rides onto the printed ticket, so it is read from `dim_location` rather than taken
-from the caller.
+Answers an **array holding exactly one object**, always: either
+`{ ok: true, canonical_id, external_ref, msg_id, van_location_key, huidige_status,
+oud_shipday_order_id }` describing the NEW order, or a refusal (below). There is no `van_naam`
+field: the origin shop's name rides onto the printed ticket, so it is read from `dim_location`
+rather than taken from the caller.
 
-A bad token, a malformed field, an unknown order, or an order that cannot be moved (already
-cancelled, complete, or ls_rejected) fails the execution instead of answering 200.
+### What the caller gets, per outcome
+
+**`ok` is the field to branch on, never the HTTP status alone.** A 200 from this door does not
+mean the handover happened; `ok: true` does. A refusal is an expected outcome of this door, so
+it is answered rather than thrown - a thrown error reaches the caller as n8n's own generic
+envelope (`{"message":"Error in workflow"}`) with the node's text nowhere in it, and no client
+can tell a refusal from a crash.
+
+| Outcome | HTTP | Body |
+|---|---|---|
+| `check`, order exists | 200 | `[ { ok: true, location_key, bestaat, actief, deliverect_slikt, ontbrekende_plus, aanbiedbaar }, ... ]` - one object per candidate, `location_key` order |
+| `check`, unknown order | 200 | `[ { ok: false, reden: "order_bestaat_niet", canonical_id } ]` |
+| `move`, moved | 200 | `[ { ok: true, canonical_id, external_ref, msg_id, van_location_key, huidige_status, oud_shipday_order_id } ]` |
+| `move`, order not movable | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status } ]` - `huidige_status` is the origin's status as the statement found it: `cancelled`, `complete` or `ls_rejected` |
+| `move`, unknown order | 200 | `[ { ok: false, reden: "order_bestaat_niet", canonical_id, huidige_status: null } ]` |
+| bad token, malformed request, database error | 500 | n8n's generic envelope. No diagnosis - read the execution in n8n |
+
+`canonical_id` on an `ok: true` move is the **new** order's id; on a refusal there is no new
+order, so it echoes the id you asked about. `huidige_status` on an `ok: true` move is the
+status the origin had **before** the cancel.
+
+**What `reden: "niets_gewijzigd"` does and does not prove.** It says the door's statement
+matched nothing and returned no new order. It is *probably* also true that the origin was left
+alone - the cancel and the insert are one statement, so a raising insert takes the cancel down
+with it. But if a `BEFORE INSERT` trigger silently **suppressed** the target row rather than
+raising, the cancel in `oud` would have committed. Until Step 0's trigger question is actually
+answered, read `huidige_status` and, if it surprises you, read the origin row before doing
+anything else.
 
 **Both actions answer an array, on purpose.** The webhook node carries
 `responseData: "allEntries"`. n8n's default for `responseMode: "lastNode"` is `firstEntryJson`,
@@ -70,11 +96,15 @@ queue accepted it" and quote it in an incident. Nothing adds to it, compares it 
 it. If a client ever needs to do arithmetic on it, that is a sign the door owes it a different
 field.
 
-**What a non-200 means for the OS.** The move is one statement in one transaction, so a failure
-means either nothing happened or - in the one case where the transaction committed and the HTTP
-response was lost - everything happened. Do not assume either: read the origin row. **Retrying
-is safe:** a second `move` on the same `canonical_id` finds the origin already `cancelled`, the
-cancel matches nothing, and the door refuses. It cannot move the same order twice.
+**What a 500 means for the OS.** A 500 is now reserved for the genuinely unexpected - a bad
+token, a malformed request, a database error - so it carries no diagnosis and the OS cannot
+reason about it. The move is one statement in one transaction, so it means either nothing
+happened or, in the one case where the transaction committed and the HTTP response was lost,
+everything happened. Do not assume either: read the origin row, or ask `check` about it.
+**Retrying is safe:** a second `move` on the same `canonical_id` finds the origin already
+`cancelled`, the cancel matches nothing, and the door answers
+`{ ok: false, reden: "niets_gewijzigd", huidige_status: "cancelled" }`. It cannot move the same
+order twice.
 
 ## What was checked against prod before the SQL was written
 
@@ -361,7 +391,29 @@ curl -sS -X POST https://<n8n-host>/webhook/order-overname \
   -H 'content-type: application/json' \
   -H "x-overname-token: $OVERNAME_TOKEN" \
   -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE"}'
+
+# 3c. NOT optional: produce a refusal on purpose and record the RAW body.
+#     The same call again - the origin is cancelled now, so the door must refuse.
+#     Expect HTTP 200 and [{"ok":false,"reden":"niets_gewijzigd","huidige_status":"cancelled",...}]
+curl -sS -o /tmp/overname-refusal.json -w 'HTTP %{http_code}\n' \
+  -X POST https://<n8n-host>/webhook/order-overname \
+  -H 'content-type: application/json' \
+  -H "x-overname-token: $OVERNAME_TOKEN" \
+  -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE"}'
+cat /tmp/overname-refusal.json
+
+# 3d. And a check on an id that does not exist.
+#     Expect HTTP 200 and [{"ok":false,"reden":"order_bestaat_niet","canonical_id":"..."}]
+curl -sS -w '\nHTTP %{http_code}\n' -X POST https://<n8n-host>/webhook/order-overname \
+  -H 'content-type: application/json' \
+  -H "x-overname-token: $OVERNAME_TOKEN" \
+  -d '{"action":"check","canonical_id":"00000000-0000-4000-8000-000000000000","location_keys":["LOC_AALST"]}'
 ```
+
+Paste both raw bodies into the handover note. They are the only evidence that the refusal shape
+is what this document claims, and the only thing that will catch it changing under a newer n8n:
+a refusal that starts arriving as a 500 breaks the OS client's most important distinction -
+"definitely nothing changed" versus "I have no idea what happened" - and it breaks it silently.
 
 ### Step 4. Verify the result (read-only)
 
