@@ -63,6 +63,14 @@ it is answered rather than thrown - a thrown error reaches the caller as n8n's o
 envelope (`{"message":"Error in workflow"}`) with the node's text nowhere in it, and no client
 can tell a refusal from a crash.
 
+**A wrong shared secret is answered too**, with `reden: "niet_toegelaten"` and nothing else -
+no echo of the token, no word on whether it was absent or merely wrong, no Vault key name.
+Answering 200 for an auth failure is unusual and it is right here for one reason: this door has
+exactly one caller, over a private tunnel, and the likeliest failure in the whole rollout is
+the Step 1 value being copied by hand onto two machines and not matching. A generic 500 would
+have an operator debugging the tunnel and n8n instead of the value. **If this door ever becomes
+reachable from anywhere else, that reasoning expires.**
+
 | Outcome | HTTP | Body |
 |---|---|---|
 | `check`, order exists | 200 | `[ { ok: true, location_key, bestaat, actief, deliverect_slikt, ontbrekende_plus, aanbiedbaar }, ... ]` - one object per candidate, `location_key` order |
@@ -70,7 +78,8 @@ can tell a refusal from a crash.
 | `move`, moved | 200 | `[ { ok: true, canonical_id, external_ref, msg_id, van_location_key, huidige_status, oud_shipday_order_id } ]` |
 | `move`, order not movable | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status } ]` - `huidige_status` is the origin's status as the statement found it: `cancelled`, `complete` or `ls_rejected` |
 | `move`, unknown order | 200 | `[ { ok: false, reden: "order_bestaat_niet", canonical_id, huidige_status: null } ]` |
-| bad token, malformed request, database error | 500 | n8n's generic envelope. No diagnosis - read the execution in n8n |
+| any action, wrong shared secret | 200 | `[ { ok: false, reden: "niet_toegelaten" } ]` - nothing else, ever |
+| malformed request, database error | 500 | n8n's generic envelope. No diagnosis - read the execution in n8n |
 
 `canonical_id` on an `ok: true` move is the **new** order's id; on a refusal there is no new
 order, so it echoes the id you asked about. `huidige_status` on an `ok: true` move is the
@@ -96,9 +105,9 @@ queue accepted it" and quote it in an incident. Nothing adds to it, compares it 
 it. If a client ever needs to do arithmetic on it, that is a sign the door owes it a different
 field.
 
-**What a 500 means for the OS.** A 500 is now reserved for the genuinely unexpected - a bad
-token, a malformed request, a database error - so it carries no diagnosis and the OS cannot
-reason about it. The move is one statement in one transaction, so it means either nothing
+**What a 500 means for the OS.** A 500 is reserved for the genuinely unexpected - a malformed
+request (a caller bug) and a database error (a real fault) - so it carries no diagnosis and the
+OS cannot reason about it. A wrong secret is no longer among them. The move is one statement in one transaction, so it means either nothing
 happened or, in the one case where the transaction committed and the HTTP response was lost,
 everything happened. Do not assume either: read the origin row, or ask `check` about it.
 **Retrying is safe:** a second `move` on the same `canonical_id` finds the origin already
@@ -326,8 +335,10 @@ has to match; the names live on different machines and follow their own conventi
 | The OS, environment | `SROVA_OVERNAME_TOKEN` | the OS garage's own `<SOURCE>_*` convention |
 
 Do not "fix" one to match another. Renaming the Vault row means editing this workflow;
-renaming the header means editing both sides at once. If the door ever answers `unauthorized`,
-the thing to compare is the value, not the spelling.
+renaming the header means editing both sides at once. **If the first real call comes back
+`{ ok: false, reden: "niet_toegelaten" }`, the two VALUES differ - the names are a red
+herring.** Copy the Vault value again, carefully; a trailing newline or a truncated paste is
+the usual cause.
 
 ### Step 2. Import, inactive
 
@@ -408,9 +419,16 @@ curl -sS -w '\nHTTP %{http_code}\n' -X POST https://<n8n-host>/webhook/order-ove
   -H 'content-type: application/json' \
   -H "x-overname-token: $OVERNAME_TOKEN" \
   -d '{"action":"check","canonical_id":"00000000-0000-4000-8000-000000000000","location_keys":["LOC_AALST"]}'
+
+# 3e. And a deliberately wrong secret.
+#     Expect HTTP 200 and [{"ok":false,"reden":"niet_toegelaten"}] - and nothing else in it.
+curl -sS -w '\nHTTP %{http_code}\n' -X POST https://<n8n-host>/webhook/order-overname \
+  -H 'content-type: application/json' \
+  -H "x-overname-token: dit-is-niet-het-geheim" \
+  -d '{"action":"check","canonical_id":"<uuid>","location_keys":["LOC_AALST"]}'
 ```
 
-Paste both raw bodies into the handover note. They are the only evidence that the refusal shape
+Paste all three raw bodies into the handover note. They are the only evidence that the refusal shape
 is what this document claims, and the only thing that will catch it changing under a newer n8n:
 a refusal that starts arriving as a 500 breaks the OS client's most important distinction -
 "definitely nothing changed" versus "I have no idea what happened" - and it breaks it silently.

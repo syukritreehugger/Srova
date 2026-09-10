@@ -16,7 +16,7 @@
         "responseMode": "lastNode",
         "responseData": "allEntries"
       },
-      "notes": "responseData=allEntries is deliberate: n8n's default for responseMode=lastNode is firstEntryJson, which would answer a check on four candidate shops with the first shop only, and the caller cannot tell that apart from a real one-shop answer. Shapes: check -> one object per candidate; move -> an array holding exactly one object. Refusals are answered with ok=false at HTTP 200; only a bad token, a malformed request or a database error throws (generic 500).",
+      "notes": "responseData=allEntries is deliberate: n8n's default for responseMode=lastNode is firstEntryJson, which would answer a check on four candidate shops with the first shop only, and the caller cannot tell that apart from a real one-shop answer. Shapes: check -> one object per candidate; move -> an array holding exactly one object. Every refusal - including a wrong shared secret - is answered with ok=false at HTTP 200. Only a malformed request and a database error throw (generic 500).",
       "notesInFlow": true,
       "webhookId": "b7f4c1de-2b60-4a52-9f0d-6a1c4d8e7f30"
     },
@@ -51,7 +51,56 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Shared-secret gate + input validation for the order handover door.\n// The secret lives in Vault (overname_webhook_token), not in this code: shipday_compensate\n// reads its keys the same way.\nconst secret = $input.first().json.overname_token || '';\nconst hook = $('Overname Webhook').first().json;\nconst headers = hook.headers || {};\nconst body = hook.body || {};\nconst token = headers['x-overname-token'] || '';\n\nif (!secret) throw new Error('overname_webhook_token missing from vault');\nif (token !== secret) throw new Error('unauthorized');\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst LOC = /^LOC_[A-Z0-9_]{1,32}$/;\n\nconst action = String(body.action || '');\nconst canonicalId = String(body.canonical_id || '');\nif (!UUID.test(canonicalId)) throw new Error('canonical_id is not a uuid');\n\nif (action === 'check') {\n  const kandidaten = Array.isArray(body.location_keys) ? body.location_keys.map(String) : [];\n  if (!kandidaten.length) throw new Error('location_keys is empty');\n  for (const k of kandidaten) if (!LOC.test(k)) throw new Error('bad location_key: ' + k);\n  return [{ json: { action, canonical_id: canonicalId, location_keys: kandidaten } }];\n}\n\nif (action === 'move') {\n  const target = String(body.target_location_key || '');\n  if (!LOC.test(target)) throw new Error('bad target_location_key');\n  // No van_naam: the name that rides onto the printed ticket is read from dim_location in\n  // the move query. The caller does not get to write on a customer's ticket.\n  return [{ json: { action, canonical_id: canonicalId, target_location_key: target } }];\n}\n\nthrow new Error('unknown action: ' + action);\n"
+        "jsCode": "// Shared-secret gate + input validation for the order handover door.\n// The secret lives in Vault (overname_webhook_token), not in this code: shipday_compensate\n// reads its keys the same way.\nconst secret = $input.first().json.overname_token || '';\nconst hook = $('Overname Webhook').first().json;\nconst headers = hook.headers || {};\nconst body = hook.body || {};\nconst token = headers['x-overname-token'] || '';\n\n// A missing Vault row is a real fault - the door is not configured - and throws.\nif (!secret) throw new Error('overname webhook secret missing from vault');\n\n// A WRONG token is answered, not thrown. Unusual for an auth failure, and right here for one\n// reason: this door has exactly one caller, over a private tunnel, and the most likely failure\n// in the whole rollout is the Step 1 value being copied by hand onto two machines and not\n// matching. A generic 500 would have an operator debugging the tunnel and n8n instead of the\n// value. If this door ever becomes reachable from anywhere else, that reasoning expires and\n// this goes back to a 401/500 that says nothing.\n// 'Not allowed' is the whole message: no echo of the token, no word on whether it was absent\n// or merely wrong, no name of the Vault key. Nothing that helps someone who should not be here.\n// Nothing below this line runs for an unauthenticated caller - not even input validation.\nif (token !== secret) {\n  return [{ json: { toegelaten: false, ok: false, reden: 'niet_toegelaten' } }];\n}\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst LOC = /^LOC_[A-Z0-9_]{1,32}$/;\n\nconst action = String(body.action || '');\nconst canonicalId = String(body.canonical_id || '');\nif (!UUID.test(canonicalId)) throw new Error('canonical_id is not a uuid');\n\nif (action === 'check') {\n  const kandidaten = Array.isArray(body.location_keys) ? body.location_keys.map(String) : [];\n  if (!kandidaten.length) throw new Error('location_keys is empty');\n  for (const k of kandidaten) if (!LOC.test(k)) throw new Error('bad location_key: ' + k);\n  return [{ json: { toegelaten: true, action, canonical_id: canonicalId, location_keys: kandidaten } }];\n}\n\nif (action === 'move') {\n  const target = String(body.target_location_key || '');\n  if (!LOC.test(target)) throw new Error('bad target_location_key');\n  // No van_naam: the name that rides onto the printed ticket is read from dim_location in\n  // the move query. The caller does not get to write on a customer's ticket.\n  return [{ json: { toegelaten: true, action, canonical_id: canonicalId, target_location_key: target } }];\n}\n\nthrow new Error('unknown action: ' + action);\n"
+      }
+    },
+    {
+      "id": "if-toegelaten",
+      "name": "IF toegelaten?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "is-toegelaten",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.toegelaten }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "notes": "A wrong shared secret leaves here on the false branch and is ANSWERED at HTTP 200 with ok=false, reden=niet_toegelaten. Input validation lives beyond this point, so an unauthenticated caller never reaches it.",
+      "notesInFlow": true
+    },
+    {
+      "id": "answer-niet-toegelaten",
+      "name": "Answer: Niet toegelaten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        600
+      ],
+      "parameters": {
+        "jsCode": "// Terminal node of the refused branch: its item IS the response body, at HTTP 200.\n// See the reasoning in Authenticate & Route. Nothing is added here - no token, no hint about\n// which half was wrong, no Vault key name.\nreturn [{ json: { ok: false, reden: 'niet_toegelaten' } }];\n"
       }
     },
     {
@@ -60,7 +109,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        900,
+        1140,
         300
       ],
       "parameters": {
@@ -93,7 +142,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1140,
+        1380,
         180
       ],
       "parameters": {
@@ -117,7 +166,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1360,
+        1600,
         180
       ],
       "parameters": {
@@ -132,7 +181,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1140,
+        1380,
         420
       ],
       "parameters": {
@@ -156,7 +205,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1360,
+        1600,
         420
       ],
       "parameters": {
@@ -193,7 +242,25 @@
       "main": [
         [
           {
+            "node": "IF toegelaten?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF toegelaten?": {
+      "main": [
+        [
+          {
             "node": "IF action = check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answer: Niet toegelaten",
             "type": "main",
             "index": 0
           }
