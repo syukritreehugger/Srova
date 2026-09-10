@@ -13,8 +13,11 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "order-overname",
-        "responseMode": "lastNode"
+        "responseMode": "lastNode",
+        "responseData": "allEntries"
       },
+      "notes": "responseData=allEntries is deliberate: n8n's default for responseMode=lastNode is firstEntryJson, which would answer a check on four candidate shops with the first shop only, and the caller cannot tell that apart from a real one-shop answer. Shapes: check -> one object per candidate; move -> an array holding exactly one object.",
+      "notesInFlow": true,
       "webhookId": "b7f4c1de-2b60-4a52-9f0d-6a1c4d8e7f30"
     },
     {
@@ -119,7 +122,9 @@
       ],
       "parameters": {
         "jsCode": "// bestelling is CROSS JOINed, so an unknown canonical_id yields zero rows - which over the\n// webhook would arrive as an empty body, indistinguishable from \"no shop can serve it\".\n// Check Candidates carries alwaysOutputData so this node still runs on an empty result.\nconst rows = $input.all().filter(r => r.json && r.json.location_key);\nif (!rows.length) {\n  throw new Error('no such order: canonical_id not found in canonical_orders');\n}\nreturn rows;\n"
-      }
+      },
+      "notes": "Last node of the check branch: its items ARE the response. One object per candidate shop, in location_key order.",
+      "notesInFlow": true
     },
     {
       "id": "move-order",
@@ -156,7 +161,9 @@
       ],
       "parameters": {
         "jsCode": "// The move node carries alwaysOutputData, so an empty result arrives here as one empty item\n// instead of skipping this node. That is the point: a silent 200 on an empty result would\n// leave the OS believing a till printed. Say what is actually known - the statement matched\n// nothing - and send the reader to the row instead of guessing a cause for them.\nconst rows = $input.all().filter(r => r.json && r.json.canonical_id);\nif (!rows.length) {\n  throw new Error(\n    'move matched nothing: the origin order was not in a movable state ' +\n    '(cancelled, complete and ls_rejected are refused), or it does not exist. ' +\n    'Read canonical_orders for this id before retrying - nothing was changed.');\n}\nreturn rows;\n"
-      }
+      },
+      "notes": "Last node of the move branch: its items ARE the response. Always exactly one object, wrapped in an array by responseData=allEntries. Never zero - zero throws here instead.",
+      "notesInFlow": true
     }
   ],
   "connections": {

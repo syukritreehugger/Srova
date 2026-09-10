@@ -36,11 +36,12 @@ Three measured reasons, all still true on 2026-09-10:
 { "action": "check", "canonical_id": "<uuid>", "location_keys": ["LOC_AALST", "LOC_BERLARE"] }
 ```
 
-Answers one row per candidate: `location_key`, `bestaat`, `actief`, `deliverect_slikt`,
-`ontbrekende_plus[]`, `aanbiedbaar`. A candidate is offerable when it exists in `dim_location`,
-is active, would not be swallowed by the `deliverect_yield` branch, and holds every PLU of the
-order. An unknown `canonical_id` fails the execution ("no such order") instead of answering an
-empty list, which would read like "no shop can serve it".
+Answers a JSON **array with one object per candidate**, in `location_key` order:
+`location_key`, `bestaat`, `actief`, `deliverect_slikt`, `ontbrekende_plus[]`, `aanbiedbaar`.
+A candidate is offerable when it exists in `dim_location`, is active, would not be swallowed by
+the `deliverect_yield` branch, and holds every PLU of the order. An unknown `canonical_id`
+fails the execution ("no such order") instead of answering an empty list, which would read like
+"no shop can serve it".
 
 **`action: "move"`** - do it.
 
@@ -48,13 +49,26 @@ empty list, which would read like "no shop can serve it".
 { "action": "move", "canonical_id": "<uuid>", "target_location_key": "LOC_BERLARE" }
 ```
 
-Answers `{ ok: true, canonical_id, external_ref, msg_id, van_location_key, oude_status,
-oud_shipday_order_id }` for the NEW order. There is no `van_naam` field: the origin shop's name
-rides onto the printed ticket, so it is read from `dim_location` rather than taken from the
-caller.
+Answers an **array holding exactly one object** (never zero - an empty result throws instead):
+`{ ok: true, canonical_id, external_ref, msg_id, van_location_key, oude_status,
+oud_shipday_order_id }`, describing the NEW order. There is no `van_naam` field: the origin
+shop's name rides onto the printed ticket, so it is read from `dim_location` rather than taken
+from the caller.
 
 A bad token, a malformed field, an unknown order, or an order that cannot be moved (already
 cancelled, complete, or ls_rejected) fails the execution instead of answering 200.
+
+**Both actions answer an array, on purpose.** The webhook node carries
+`responseData: "allEntries"`. n8n's default for `responseMode: "lastNode"` is `firstEntryJson`,
+which would have answered a `check` on four candidate shops with the first shop only - and no
+caller can tell that apart from a legitimate one-shop answer. Do not remove that setting, and
+do not assume the default if you rebuild this workflow on a newer n8n: defaults move.
+
+**`msg_id` is evidence, not a number to compute with.** It comes back from `pgmq_send_order`
+as a Postgres `bigint` - the id of the queue message - and it exists so the caller can say "the
+queue accepted it" and quote it in an incident. Nothing adds to it, compares it or orders by
+it. If a client ever needs to do arithmetic on it, that is a sign the door owes it a different
+field.
 
 **What a non-200 means for the OS.** The move is one statement in one transaction, so a failure
 means either nothing happened or - in the one case where the transaction committed and the HTTP
@@ -270,7 +284,20 @@ select vault.create_secret('<a long random string>', 'overname_webhook_token',
                            'Shared secret for POST /webhook/order-overname (OS -> Srova)');
 ```
 
-Give the same string to the OS as its `OVERNAME_WEBHOOK_TOKEN`.
+Give the same string to the OS.
+
+**The three names are deliberately not the same, and none of them is wrong.** Only the VALUE
+has to match; the names live on different machines and follow their own conventions:
+
+| Where | Name | Convention |
+|---|---|---|
+| Srova, Postgres Vault | `overname_webhook_token` | the name this workflow's `Load Overname Token` node queries |
+| The wire | header `x-overname-token` | what the OS sends and this door compares |
+| The OS, environment | `SROVA_OVERNAME_TOKEN` | the OS garage's own `<SOURCE>_*` convention |
+
+Do not "fix" one to match another. Renaming the Vault row means editing this workflow;
+renaming the header means editing both sides at once. If the door ever answers `unauthorized`,
+the thing to compare is the value, not the spelling.
 
 ### Step 2. Import, inactive
 
@@ -319,17 +346,20 @@ Then, with the workflow still inactive, use n8n's **Execute Workflow** with pinn
 (or activate it, run the two calls below, and deactivate again - decide before you start; two
 active copies of anything is the thing this shop does not do).
 
+`$OVERNAME_TOKEN` below is just your own shell variable holding the value from Step 1 - a
+fourth name for the same string, and equally not wrong.
+
 ```bash
 # 3a. Ask which shops can serve it.
 curl -sS -X POST https://<n8n-host>/webhook/order-overname \
   -H 'content-type: application/json' \
-  -H "x-overname-token: $OVERNAME_WEBHOOK_TOKEN" \
+  -H "x-overname-token: $OVERNAME_TOKEN" \
   -d '{"action":"check","canonical_id":"<uuid>","location_keys":["LOC_AALST","LOC_BERLARE","LOC_DENDER"]}'
 
 # 3b. Move it to one that answered aanbiedbaar = true.
 curl -sS -X POST https://<n8n-host>/webhook/order-overname \
   -H 'content-type: application/json' \
-  -H "x-overname-token: $OVERNAME_WEBHOOK_TOKEN" \
+  -H "x-overname-token: $OVERNAME_TOKEN" \
   -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE"}'
 ```
 
