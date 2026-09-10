@@ -48,7 +48,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Shared-secret gate + input validation for the order handover door.\n// The secret lives in Vault (overname_webhook_token), not in this code: shipday_compensate\n// reads its keys the same way. shipday_webhook_status still hardcodes its secret - do not\n// copy that half of the pattern.\nconst secret = $input.first().json.overname_token || '';\nconst hook = $('Overname Webhook').first().json;\nconst headers = hook.headers || {};\nconst body = hook.body || {};\nconst token = headers['x-overname-token'] || '';\n\nif (!secret) throw new Error('overname_webhook_token missing from vault');\nif (token !== secret) throw new Error('unauthorized');\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst LOC = /^LOC_[A-Z0-9_]{1,32}$/;\n// Rides into external_ref and onto the printed ticket, so keep it short and plain.\nconst NAAM = /^[A-Z0-9 _-]{1,24}$/;\n\nconst action = String(body.action || '');\nconst canonicalId = String(body.canonical_id || '');\nif (!UUID.test(canonicalId)) throw new Error('canonical_id is not a uuid');\n\nif (action === 'check') {\n  const kandidaten = Array.isArray(body.location_keys) ? body.location_keys.map(String) : [];\n  if (!kandidaten.length) throw new Error('location_keys is empty');\n  for (const k of kandidaten) if (!LOC.test(k)) throw new Error('bad location_key: ' + k);\n  return [{ json: { action, canonical_id: canonicalId, location_keys: kandidaten } }];\n}\n\nif (action === 'move') {\n  const target = String(body.target_location_key || '');\n  const van = String(body.van_naam || '').toUpperCase();\n  if (!LOC.test(target)) throw new Error('bad target_location_key');\n  if (!NAAM.test(van)) throw new Error('bad van_naam');\n  return [{ json: { action, canonical_id: canonicalId, target_location_key: target, van_naam: van } }];\n}\n\nthrow new Error('unknown action: ' + action);\n"
+        "jsCode": "// Shared-secret gate + input validation for the order handover door.\n// The secret lives in Vault (overname_webhook_token), not in this code: shipday_compensate\n// reads its keys the same way.\nconst secret = $input.first().json.overname_token || '';\nconst hook = $('Overname Webhook').first().json;\nconst headers = hook.headers || {};\nconst body = hook.body || {};\nconst token = headers['x-overname-token'] || '';\n\nif (!secret) throw new Error('overname_webhook_token missing from vault');\nif (token !== secret) throw new Error('unauthorized');\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst LOC = /^LOC_[A-Z0-9_]{1,32}$/;\n\nconst action = String(body.action || '');\nconst canonicalId = String(body.canonical_id || '');\nif (!UUID.test(canonicalId)) throw new Error('canonical_id is not a uuid');\n\nif (action === 'check') {\n  const kandidaten = Array.isArray(body.location_keys) ? body.location_keys.map(String) : [];\n  if (!kandidaten.length) throw new Error('location_keys is empty');\n  for (const k of kandidaten) if (!LOC.test(k)) throw new Error('bad location_key: ' + k);\n  return [{ json: { action, canonical_id: canonicalId, location_keys: kandidaten } }];\n}\n\nif (action === 'move') {\n  const target = String(body.target_location_key || '');\n  if (!LOC.test(target)) throw new Error('bad target_location_key');\n  // No van_naam: the name that rides onto the printed ticket is read from dim_location in\n  // the move query. The caller does not get to write on a customer's ticket.\n  return [{ json: { action, canonical_id: canonicalId, target_location_key: target } }];\n}\n\nthrow new Error('unknown action: ' + action);\n"
       }
     },
     {
@@ -95,7 +95,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Which candidate shops can actually serve this order?\n-- PLU lives in raw_ls_products.sku (there is no plu column) and push_lightspeed_order only\n-- accepts rows with visible = true and a non-empty sku, so this mirrors its Load LS Catalog\n-- SKUs node exactly. Modifier PLUs count too: the pusher validates those as well.\nWITH bestelling AS (\n  SELECT co.source, co.items\n    FROM public.canonical_orders co\n   WHERE co.id = $1::uuid\n), regel AS (\n  SELECT DISTINCT plu FROM (\n    SELECT jsonb_array_elements(b.items)->>'plu' AS plu FROM bestelling b\n    UNION ALL\n    SELECT jsonb_array_elements(jsonb_array_elements(b.items)->'modifiers')->>'plu' FROM bestelling b\n  ) s\n   WHERE plu IS NOT NULL AND plu <> ''\n), kandidaat AS (\n  SELECT value AS location_key FROM jsonb_array_elements_text($2::jsonb) AS t(value)\n)\nSELECT k.location_key,\n       (dl.location_key IS NOT NULL)                                        AS bestaat,\n       COALESCE(dl.is_active, true)                                         AS actief,\n       (b.source = 'takeaway' AND COALESCE(dl.deliverect_active, false))    AS deliverect_slikt,\n       m.ontbrekende_plus,\n       (dl.location_key IS NOT NULL\n        AND COALESCE(dl.is_active, true)\n        AND NOT (b.source = 'takeaway' AND COALESCE(dl.deliverect_active, false))\n        AND cardinality(m.ontbrekende_plus) = 0)                            AS aanbiedbaar\n  FROM kandidaat k\n  CROSS JOIN bestelling b\n  LEFT JOIN public.dim_location dl ON dl.location_key = k.location_key\n  CROSS JOIN LATERAL (\n    SELECT ARRAY(\n      SELECT r.plu FROM regel r\n       WHERE NOT EXISTS (\n         SELECT 1 FROM public.raw_ls_products p\n          WHERE p.location_key = k.location_key\n            AND p.sku = r.plu\n            AND p.visible = true)\n    ) AS ontbrekende_plus\n  ) m\n ORDER BY k.location_key;\n",
+        "query": "-- Which candidate shops can actually serve this order?\n-- PLU lives in raw_ls_products.sku (there is no plu column) and push_lightspeed_order only\n-- accepts rows with visible = true and a non-empty sku, so this mirrors its Load LS Catalog\n-- SKUs node exactly. Modifier PLUs count too: the pusher validates those as well.\n-- deliverect_active is NOT limited to takeaway: the live IF NOT Deliverect Active? node has\n-- exactly one condition, on deliverect_active, and every order pulled off the queue passes\n-- through it. A Shopify order offered to a deliverect shop would be yielded there too.\nWITH bestelling AS (\n  SELECT co.items\n    FROM public.canonical_orders co\n   WHERE co.id = $1::uuid\n), regel AS (\n  SELECT DISTINCT plu FROM (\n    SELECT jsonb_array_elements(b.items)->>'plu' AS plu FROM bestelling b\n    UNION ALL\n    SELECT jsonb_array_elements(jsonb_array_elements(b.items)->'modifiers')->>'plu' FROM bestelling b\n  ) s\n   WHERE plu IS NOT NULL AND plu <> ''\n), kandidaat AS (\n  SELECT value AS location_key FROM jsonb_array_elements_text($2::jsonb) AS t(value)\n)\nSELECT k.location_key,\n       (dl.location_key IS NOT NULL)                                        AS bestaat,\n       COALESCE(dl.is_active, true)                                         AS actief,\n       COALESCE(dl.deliverect_active, false)                                AS deliverect_slikt,\n       m.ontbrekende_plus,\n       (dl.location_key IS NOT NULL\n        AND COALESCE(dl.is_active, true)\n        AND NOT COALESCE(dl.deliverect_active, false)\n        AND cardinality(m.ontbrekende_plus) = 0)                            AS aanbiedbaar\n  FROM kandidaat k\n  CROSS JOIN bestelling b\n  LEFT JOIN public.dim_location dl ON dl.location_key = k.location_key\n  CROSS JOIN LATERAL (\n    SELECT ARRAY(\n      SELECT r.plu FROM regel r\n       WHERE NOT EXISTS (\n         SELECT 1 FROM public.raw_ls_products p\n          WHERE p.location_key = k.location_key\n            AND p.sku = r.plu\n            AND p.visible = true)\n    ) AS ontbrekende_plus\n  ) m\n ORDER BY k.location_key;\n",
         "options": {
           "queryReplacement": "={{ $json.canonical_id }},={{ JSON.stringify($json.location_keys) }}"
         }
@@ -105,6 +105,20 @@
           "id": "9zc3jzWzgtSSJL0O",
           "name": "Postgres Data Catalog"
         }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "guard-order-exists",
+      "name": "Guard: Order Exists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        180
+      ],
+      "parameters": {
+        "jsCode": "// bestelling is CROSS JOINed, so an unknown canonical_id yields zero rows - which over the\n// webhook would arrive as an empty body, indistinguishable from \"no shop can serve it\".\n// Check Candidates carries alwaysOutputData so this node still runs on an empty result.\nconst rows = $input.all().filter(r => r.json && r.json.location_key);\nif (!rows.length) {\n  throw new Error('no such order: canonical_id not found in canonical_orders');\n}\nreturn rows;\n"
       }
     },
     {
@@ -118,9 +132,9 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Cancel at the origin shop, recreate at the target shop. One statement, one transaction.\n-- location_key is immutable by design (both normalizers exclude it from DO UPDATE SET), and\n-- Lightspeed has no cancel/update call, so a new row is the only way to make the target till\n-- print. $1 = canonical_id, $2 = target location_key, $3 = short name of the origin shop.\nWITH oud_status AS (\n  -- Same snapshot as the UPDATE below, so this is the status BEFORE the cancel.\n  SELECT status, shipday_order_id FROM public.canonical_orders WHERE id = $1::uuid\n), oud AS (\n  UPDATE public.canonical_orders\n     SET status = 'cancelled'::public.order_state,\n         cancel_reason = 'overname_naar_' || $2::text,\n         updated_at = now()\n   WHERE id = $1::uuid\n     -- is_allowed_order_state_transition() on prod refuses complete -> cancelled and\n     -- ls_rejected -> cancelled (and cancelled -> cancelled). Naming the legal set here\n     -- turns a trigger exception into an empty result the Guard node reports honestly.\n     AND status IN ('received', 'normalized', 'pushing_ls', 'ls_sent',\n                    'ls_accepted', 'shipday_sent', 'ls_failed')\n  RETURNING *\n), nieuw AS (\n  INSERT INTO public.canonical_orders (\n    schema_version, source, external_ref, location_key, order_type, status,\n    customer, items, payment, vat_lines, utm, raw_payload_id, correlation_id\n  )\n  SELECT o.schema_version, o.source,\n         -- MUST differ: ON CONFLICT (source, external_ref) is the arbiter both normalizers\n         -- use, and external_ref is also the Lightspeed idempotency key (externalReference),\n         -- which push_lightspeed_order compares in Filter LS Idempotency. The suffix rides\n         -- onto the printed ticket for free through Build Order Payload.\n         o.external_ref || ' · OVERNAME ' || $3::text,\n         $2::text, o.order_type, 'received'::public.order_state,\n         o.customer, o.items, o.payment, o.vat_lines, o.utm, o.raw_payload_id,\n         gen_random_uuid()\n    FROM oud o\n  RETURNING id, external_ref\n), compensatie AS (\n  -- The origin order may already sit at Shipday; cancelling only the row would leave a\n  -- second driver on the same food. shipday_compensate does the DELETE.\n  SELECT public.pgmq_send_order('q_orders_compensate', jsonb_build_object(\n           'canonical_order_id', o.id,\n           'shipday_order_id',   o.shipday_order_id,\n           'location_key',       o.location_key)) AS msg_id\n    FROM oud o\n   WHERE o.shipday_order_id IS NOT NULL\n)\nSELECT n.id                                        AS canonical_id,\n       n.external_ref,\n       (SELECT location_key FROM oud)              AS van_location_key,\n       (SELECT status FROM oud_status)             AS oude_status,\n       (SELECT count(*) FROM compensatie)          AS shipday_compensaties\n  FROM nieuw n;\n",
+        "query": "-- Cancel at the origin shop, recreate at the target, and queue the push:\n-- ONE statement, ONE transaction. Either all three happen or none of them does. An earlier\n-- draft transitioned and enqueued in a second node; a failure between the two left the origin\n-- cancelled and the new row sitting at 'received' with nothing watching it.\n-- location_key is immutable by design (both normalizers exclude it from DO UPDATE SET), and\n-- Lightspeed has no cancel/update call, so a new row is the only way to make the target till\n-- print. $1 = canonical_id, $2 = target location_key.\nWITH oud_status AS (\n  -- Same snapshot as the UPDATE below, so this is the status BEFORE the cancel.\n  SELECT status, shipday_order_id FROM public.canonical_orders WHERE id = $1::uuid\n), oud AS (\n  UPDATE public.canonical_orders\n     SET status = 'cancelled'::public.order_state,\n         cancel_reason = 'overname_naar_' || $2::text,\n         updated_at = now()\n   WHERE id = $1::uuid\n     -- is_allowed_order_state_transition() on prod refuses complete -> cancelled and\n     -- ls_rejected -> cancelled (and cancelled -> cancelled). Naming the legal set here\n     -- turns a trigger exception into an empty result the Guard node reports honestly.\n     AND status IN ('received', 'normalized', 'pushing_ls', 'ls_sent',\n                    'ls_accepted', 'shipday_sent', 'ls_failed')\n  RETURNING *\n), nieuw AS (\n  INSERT INTO public.canonical_orders (\n    schema_version, source, external_ref, location_key, order_type, status,\n    customer, items, payment, vat_lines, utm, raw_payload_id, correlation_id\n  )\n  SELECT o.schema_version, o.source,\n         -- MUST differ: ON CONFLICT (source, external_ref) is the arbiter both normalizers\n         -- use, and external_ref is also the Lightspeed idempotency key (externalReference),\n         -- which push_lightspeed_order compares in Filter LS Idempotency. The name of the\n         -- origin shop is read from dim_location, never taken from the caller: it rides onto\n         -- the printed ticket through Build Order Payload.\n         -- LEFT JOIN + COALESCE, like Load Canonical Order in push_lightspeed_order: an inner\n         -- join here would cancel the origin, insert nothing, return no rows and still COMMIT\n         -- if the origin's shop were missing from dim_location.\n         o.external_ref || ' · OVERNAME ' || upper(COALESCE(dlo.name, o.location_key)),\n         $2::text, o.order_type,\n         -- Straight to 'normalized' on purpose: push_lightspeed_order's State -> pushing_ls\n         -- only picks up 'normalized' or 'ls_failed', and nothing watches 'received'.\n         -- Step 0 of the runbook checks that no INSERT trigger forces 'received' here.\n         'normalized'::public.order_state,\n         o.customer, o.items, o.payment, o.vat_lines, o.utm, o.raw_payload_id,\n         gen_random_uuid()\n    FROM oud o\n    LEFT JOIN public.dim_location dlo ON dlo.location_key = o.location_key\n  RETURNING id, source, external_ref, location_key\n)\n-- The courier is NOT moved here. If the origin order already has a Shipday ride, a person\n-- deletes it at the origin shop and creates it again at the target; see \"Deliberately not\n-- automated\" in docs/migrations/2026-09-10-overname-door.md. oud_shipday_order_id is returned\n-- so the OS knows whether it must nag about that at all.\nSELECT true                                        AS ok,\n       n.id                                        AS canonical_id,\n       n.external_ref,\n       (SELECT location_key FROM oud)              AS van_location_key,\n       (SELECT status FROM oud_status)             AS oude_status,\n       (SELECT shipday_order_id FROM oud_status)   AS oud_shipday_order_id,\n       public.pgmq_send_order('q_orders_push_ls', jsonb_build_object(\n         'canonical_id', n.id,\n         'source',       n.source,\n         'external_ref', n.external_ref,\n         'location_key', n.location_key,\n         'origin',       'overname'))              AS msg_id\n  FROM nieuw n;\n",
         "options": {
-          "queryReplacement": "={{ $json.canonical_id }},={{ $json.target_location_key }},={{ $json.van_naam }}"
+          "queryReplacement": "={{ $json.canonical_id }},={{ $json.target_location_key }}"
         }
       },
       "credentials": {
@@ -141,30 +155,7 @@
         420
       ],
       "parameters": {
-        "jsCode": "// The move node carries alwaysOutputData, so an empty result arrives here as one empty item\n// instead of skipping this node. That is the point: no row means the cancel matched nothing -\n// the order was already cancelled, already complete, or ls_rejected. A silent 200 there would\n// leave the OS believing a till printed.\nconst rows = $input.all().filter(r => r.json && r.json.canonical_id);\nif (!rows.length) {\n  throw new Error('order not movable: it is already cancelled, complete or ls_rejected');\n}\nreturn rows;\n"
-      }
-    },
-    {
-      "id": "normalize-enqueue",
-      "name": "Normalize + Enqueue push_ls",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        1580,
-        420
-      ],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "-- push_lightspeed_order only picks an order up from 'normalized' or 'ls_failed'\n-- (State -> pushing_ls). Both normalizers therefore insert 'received' and transition here;\n-- a row left at 'received' would sit still forever. The enqueue hangs off the same UPDATE,\n-- so nothing is queued unless the transition actually happened.\nWITH t AS (\n  UPDATE public.canonical_orders\n     SET status = 'normalized'::public.order_state,\n         updated_at = now()\n   WHERE id = $1::uuid\n     AND status = 'received'::public.order_state\n  RETURNING id, source, external_ref, location_key\n)\nSELECT true AS ok,\n       t.id AS canonical_id,\n       t.external_ref,\n       public.pgmq_send_order('q_orders_push_ls', jsonb_build_object(\n         'canonical_id', t.id,\n         'source',       t.source,\n         'external_ref', t.external_ref,\n         'location_key', t.location_key,\n         'origin',       'overname')) AS msg_id\n  FROM t;\n",
-        "options": {
-          "queryReplacement": "={{ $json.canonical_id }}"
-        }
-      },
-      "credentials": {
-        "postgres": {
-          "id": "9zc3jzWzgtSSJL0O",
-          "name": "Postgres Data Catalog"
-        }
+        "jsCode": "// The move node carries alwaysOutputData, so an empty result arrives here as one empty item\n// instead of skipping this node. That is the point: a silent 200 on an empty result would\n// leave the OS believing a till printed. Say what is actually known - the statement matched\n// nothing - and send the reader to the row instead of guessing a cause for them.\nconst rows = $input.all().filter(r => r.json && r.json.canonical_id);\nif (!rows.length) {\n  throw new Error(\n    'move matched nothing: the origin order was not in a movable state ' +\n    '(cancelled, complete and ls_rejected are refused), or it does not exist. ' +\n    'Read canonical_orders for this id before retrying - nothing was changed.');\n}\nreturn rows;\n"
       }
     }
   ],
@@ -220,22 +211,22 @@
         ]
       ]
     },
-    "Cancel Origin + Recreate At Target": {
+    "Check Candidates": {
       "main": [
         [
           {
-            "node": "Guard: Order Moved",
+            "node": "Guard: Order Exists",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Guard: Order Moved": {
+    "Cancel Origin + Recreate At Target": {
       "main": [
         [
           {
-            "node": "Normalize + Enqueue push_ls",
+            "node": "Guard: Order Moved",
             "type": "main",
             "index": 0
           }

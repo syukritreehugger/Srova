@@ -2,7 +2,8 @@
 
 **Status: written, NOT imported.** The workflow JSON lives at
 `docs/workflows/orders_overname_uitvoeren.json`. Nobody has created it in n8n, nobody has
-published it, and no row in prod has been written by it. A human does steps 1-3 below.
+published it, and no row in prod has been written by it. A human does the runbook below,
+starting at Step 0.
 
 ## Why this exists
 
@@ -37,19 +38,29 @@ Three measured reasons, all still true on 2026-09-10:
 
 Answers one row per candidate: `location_key`, `bestaat`, `actief`, `deliverect_slikt`,
 `ontbrekende_plus[]`, `aanbiedbaar`. A candidate is offerable when it exists in `dim_location`,
-is active, would not be swallowed by the takeaway `deliverect_yield` branch, and holds every
-PLU of the order.
+is active, would not be swallowed by the `deliverect_yield` branch, and holds every PLU of the
+order. An unknown `canonical_id` fails the execution ("no such order") instead of answering an
+empty list, which would read like "no shop can serve it".
 
 **`action: "move"`** - do it.
 
 ```json
-{ "action": "move", "canonical_id": "<uuid>", "target_location_key": "LOC_BERLARE", "van_naam": "TIPZAKSKE" }
+{ "action": "move", "canonical_id": "<uuid>", "target_location_key": "LOC_BERLARE" }
 ```
 
-Answers `{ ok: true, canonical_id, external_ref, msg_id }` for the NEW order. A bad token, a
-malformed field, or an order that cannot be moved (already cancelled, complete, or
-ls_rejected) fails the execution instead of answering 200 - the OS must treat any non-200
-**and any body without `ok: true`** as "the handover did not happen".
+Answers `{ ok: true, canonical_id, external_ref, msg_id, van_location_key, oude_status,
+oud_shipday_order_id }` for the NEW order. There is no `van_naam` field: the origin shop's name
+rides onto the printed ticket, so it is read from `dim_location` rather than taken from the
+caller.
+
+A bad token, a malformed field, an unknown order, or an order that cannot be moved (already
+cancelled, complete, or ls_rejected) fails the execution instead of answering 200.
+
+**What a non-200 means for the OS.** The move is one statement in one transaction, so a failure
+means either nothing happened or - in the one case where the transaction committed and the HTTP
+response was lost - everything happened. Do not assume either: read the origin row. **Retrying
+is safe:** a second `move` on the same `canonical_id` finds the origin already `cancelled`, the
+cancel matches nothing, and the door refuses. It cannot move the same order twice.
 
 ## What was checked against prod before the SQL was written
 
@@ -65,11 +76,12 @@ through the live workflow JSON.
 | `canonical_orders` has `updated_at, cancel_reason, correlation_id, raw_payload_id, vat_lines, utm, schema_version` | All present. NOT NULL: `id, schema_version, source, external_ref, location_key, order_type, status, customer, items, payment, vat_lines, correlation_id, created_at, updated_at, is_canary`. The INSERT omits only columns the live normalizer also omits (`id`, `created_at`, `updated_at`, `is_canary`), so their defaults are proven in production every day. |
 | `pgmq_send_order` signature | `pgmq_send_order(p_queue text, p_payload jsonb)`, SECURITY DEFINER wrapper around `pgmq.send`. Argument order in the sketch is correct. |
 | `'anything' -> 'cancelled'` is legal | **Partly.** `is_allowed_order_state_transition()` on prod answers `true` for received/normalized/pushing_ls/ls_sent/ls_accepted/shipday_sent/ls_failed -> cancelled, and **`false` for complete -> cancelled, ls_rejected -> cancelled and cancelled -> cancelled**. The sketch's `status <> 'cancelled'` was too wide. |
-| A new row at `'received'` is enough | **No.** `push_lightspeed_order`'s `State -> pushing_ls` node only moves an order whose status is `normalized` or `ls_failed`. A row left at `received` is never pushed and never alarms. |
+| A new row at `'received'` is enough | **No.** `push_lightspeed_order`'s `State -> pushing_ls` node only moves an order whose status is `normalized` or `ls_failed`. A row left at `received` is never pushed and never alarms - `monitor_stuck_normalized` watches `normalized` at deliverect shops and `ls_receipt_watchdog` needs an `ls_order_id`, so nothing watches `received` at all. The door therefore inserts straight at `normalized`. |
+| The `deliverect_active` yield only swallows takeaway orders | **Wrong** (an error in the plan, caught in review). The live `IF NOT Deliverect Active?` node has exactly one condition, on `deliverect_active`, with no source condition. It applies to every order pulled off the queue. As first written, a Shopify order offered to a deliverect shop would have passed the check, been cancelled at the origin and then yielded at the target. |
 | `canonical_orders_unique_active_idx` on `(source, external_ref, location_key) WHERE status != 'cancelled'` | Not verifiable this session (see below), and not load-bearing: the new row's `external_ref` differs, so it collides under neither that index nor the older non-partial `canonical_orders_source_external_ref_uk` on `(source, external_ref)` that both normalizers' `ON CONFLICT` binds to. |
 | `external_ref` length | `text`, no limit in Postgres. Real refs are 15-25 characters (`Shopify - #1037`, `Takeaway - 6GYCGB`); the suffix adds 20. Lightspeed's own limit on `externalReference` is undocumented here - if it ever rejects the value, `push_lightspeed_order` DLQs it loudly (`ls_failed` + `dlq_alerts`); it does not print at the wrong shop. |
 
-### Two things that could NOT be verified, and why it does not block
+### Four things that could NOT be verified, and what hangs on each
 
 `mcp__supabase-self-hosted__execute_sql` answered "Unable to connect" all session and shell
 access to `psql` on the VPS was refused by the permission classifier, so nothing in
@@ -77,28 +89,87 @@ access to `psql` on the VPS was refused by the permission classifier, so nothing
 
 1. **The state-transition trigger itself.** The function
    `is_allowed_order_state_transition(from_state, to_state)` exists and was called; the trigger
-   that enforces it was not read. The door does not depend on the answer: the cancel names only
-   transitions the function calls legal, and the insert uses `'received'`, which is what both
-   normalizers insert several hundred times a day.
+   that enforces it was not read. The cancel side does not depend on the answer - it names only
+   transitions the function calls legal. **The insert side does:** it inserts straight at
+   `'normalized'`, and if an INSERT-time trigger forces `'received'`, that insert raises instead
+   of writing. Step 0 says what to look for and what to do about it.
 2. **The index list on `canonical_orders`.** See the row above - the new `external_ref` differs
    under either shape.
+3. **Whether `raw_payload_id` is unique.** The new row copies it, so one `raw_orders` row ends
+   up with two canonical rows. Step 0 asks the question.
+4. **Whether `dim_location.name` is fit to print.** This door is the first thing in either repo
+   to read that column, so nothing has been keeping it tidy, and its value rides onto a
+   customer's ticket. A missing name falls back to the `location_key`; a *bad* name prints.
 
-Step 0 of the runbook closes both in two queries.
+Step 0 of the runbook closes all four.
 
-## Two shapes that differ from the plan's sketch, on purpose
+## One statement, one transaction
 
-- **The move is two statements, not one.** The cancel + insert is one statement in one
-  transaction, as asked. The `received -> normalized` transition plus the enqueue is a second
-  statement in a second node, because a data-modifying CTE cannot see a row inserted by a
-  sibling CTE in the same statement - the UPDATE would match zero rows. This is exactly how
-  both live normalizers do it (`INSERT canonical_orders` then `Transition received to
-  normalized` then enqueue), and the enqueue hangs off the transition's `RETURNING`, so a
-  failed transition queues nothing.
-- **The move also enqueues `q_orders_compensate`** when the origin order already carries a
-  `shipday_order_id`. Cancelling the row alone would leave a driver on the way to a shop that
-  no longer has the food, and a second driver dispatched from the target. The message shape
-  (`canonical_order_id`, `shipday_order_id`, `location_key`) is the one `shipday_compensate`
-  parses today. It is reported back in the response as `shipday_compensaties`.
+The whole move - cancel at the origin, insert at the target, enqueue the push - is a single
+statement in a single node. An earlier draft split the transition and the enqueue into a second
+node, on the reasoning that a data-modifying CTE cannot see a row inserted by a sibling CTE.
+That is true for reading the table, but the INSERT's own `RETURNING` **is** visible to the
+outer query, so the split was unnecessary - and it was dangerous: if the second node failed
+(connection blip, pool exhaustion, `n8n-main` restarting between nodes) the origin was
+`cancelled` and the target row sat at `received` with no queue message and no watcher. The
+customer's order would be cancelled at one shop, invisible at the other, and nothing would
+alarm. Exactly the hole this door was written to avoid, one node to the right.
+
+**If Step 0 finds an INSERT trigger that forces `'received'`,** do not force it back. Split the
+statement in two (insert at `received`, then a second node doing
+`UPDATE ... SET status='normalized' WHERE id=$1 AND status='received' RETURNING ...` with the
+enqueue hanging off that `RETURNING`) **and add the missing net in the same session**, because
+today nothing watches that state:
+
+```sql
+-- Monitor, alongside monitor_stuck_normalized: an order stuck at 'received'.
+SELECT id, external_ref, source, location_key, created_at
+  FROM public.canonical_orders
+ WHERE status = 'received'
+   AND created_at < now() - interval '5 minutes'
+ ORDER BY created_at;
+```
+
+## Deliberately not automated: the courier
+
+Cancelling the origin row does not cancel the ride. If the origin order already sits at
+Shipday, a driver is on his way to a shop that no longer has the food, and the target shop
+will dispatch a second one. That is a real hole, and it is closed by a person, not by this
+door: the OS shows the task ("delete the delivery in Shipday Aalst, create it again in Shipday
+Frietchalet") and nags until someone ticks it. `oud_shipday_order_id` in the move response
+tells the OS whether that task is needed at all.
+
+An earlier draft of this door enqueued `q_orders_compensate` automatically. It was taken back
+out, for three reasons:
+
+1. **Half the job cannot be automated.** `shipday_compensate` can DELETE the old ride; nothing
+   here can create the new one. Automating the delete leaves the risky half with the human
+   anyway - and now they are told to delete something that is already gone. Half an automation
+   across two systems is how you end up with a driver at neither shop.
+2. **It would fire for almost nobody.** Measured on prod: 2 131 Shopify delivery orders in
+   `canonical_orders`, **zero** with a `shipday_order_id` - Shopify rides are created by
+   Shipday's own Shopify integration, outside both repos. Only takeaway deliveries would ever
+   reach the branch, and those are the slice least likely to be handed over.
+3. **It would lie in the failure ledger.** `shipday_compensate` closes by writing a resolved
+   `dlq_alerts` row with `resolution_action = 'discard'`. A deliberate, successful handover
+   would start appearing there as a failure, and the next person reading that ledger would be
+   reading something untrue.
+
+**Upgrade path.** If the human task turns out to be missed in practice, the compensator is the
+place to revisit - and it should then stop writing a `dlq_alerts` row when it was called for a
+handover instead of for a failure.
+
+## A live secret found on the way (not this task's job)
+
+`shipday_webhook_status (realtime)` (n8n id `QHRqA8icb1P18kVC`) does **not** read its shared
+secret from Vault: a shared secret is hardcoded in the body of its `Validate & Map` node and
+compared there against the `token` header, so it lives in plain text in the workflow body and
+in every export of it. The value is deliberately not repeated here - writing it down is what
+spreads it.
+
+It needs rotating: new secret in Vault, the node reading it from there, Shipday's webhook
+configuration updated to match. That is its own task, because it means editing a live pipe.
+This door reads its own secret from Vault instead.
 
 ## Deliberate omissions
 
@@ -112,23 +183,85 @@ Step 0 of the runbook closes both in two queries.
   column plus three lines in `Build Order Payload`, as its own inactive-copy handover.
 - **The `·` separator** in `' · OVERNAME '` is the plan's. If a thermal ticket ever renders it
   as mojibake, swap it for ` - `; it is cosmetic and lives in exactly one line of SQL.
+- **Later Shopify edits land on the dead row, and nobody is told.** The handover deliberately
+  changes `external_ref`, and `shopify_webhook_order_updated` upserts on
+  `(source, external_ref)` - so if the customer changes the order after the handover, the
+  update finds the **cancelled origin row** and updates that. The target row's items, customer
+  and payment are frozen at the moment of handover. It is not dangerous - the reviewer
+  confirmed the dead row cannot be re-pushed - but the shop will meet it.
+  **What a person does:** treat a handover as closing the order for edits. If the customer
+  changes something afterwards, the target shop is told by phone or ticket, and the change is
+  made at the till, not in Shopify. If it has to go through the systems, cancel the target row
+  and let the shop enter a fresh order.
 
 ## Runbook - a human does this, in order
 
-### Step 0. Close the two open questions (read-only)
+### Step 0. Close the four open questions (read-only)
 
 ```sql
-select tgname, pg_get_triggerdef(t.oid)
+-- 0a. The triggers, and what their functions actually do.
+select t.tgname, pg_get_triggerdef(t.oid) as def, pg_get_functiondef(p.oid) as body
   from pg_trigger t
- where tgrelid = 'public.canonical_orders'::regclass and not tgisinternal;
+  join pg_proc p on p.oid = t.tgfoid
+ where t.tgrelid = 'public.canonical_orders'::regclass and not t.tgisinternal;
 
+-- 0b. The indexes.
 select indexname, indexdef from pg_indexes where tablename = 'canonical_orders';
+
+-- 0c. Does anything assume one raw order = one canonical order?
+select indexname, indexdef from pg_indexes
+ where tablename = 'canonical_orders' and indexdef ilike '%raw_payload_id%';
+
+select pg_get_functiondef('public.check_orphan_raw_orders'::regproc);
+select pg_get_functiondef('public.reconcile_missing_canonical'::regproc);
+
+-- 0d. Is dim_location.name fit to print on a customer's ticket?
+select location_key, name, length(name) as lengte, is_active, deliverect_active
+  from public.dim_location
+ order by location_key;
 ```
 
-Expected: a transition trigger that fires on UPDATE and accepts an INSERT at `'received'`, and
-a unique index on `(source, external_ref)` (possibly next to the partial
-`canonical_orders_unique_active_idx`). If the trigger blocks an INSERT at `'received'`, stop -
-the door cannot work and neither can the normalizers.
+**0a - what to look for:** whether any trigger fires `BEFORE INSERT` (not only `BEFORE UPDATE`)
+and whether its body constrains `NEW.status` on insert - typically a `TG_OP = 'INSERT'` branch
+demanding `'received'`, or a transition check run with `OLD` null.
+- *No INSERT-time constraint on status* (the expected answer): the door works as committed -
+  one statement, inserting straight at `'normalized'`.
+- *An INSERT-time constraint forcing `'received'`*: do not force it back. Switch to the split
+  shape described under "One statement, one transaction" above **and** add the
+  `status = 'received'` monitor in the same session. Nothing watches that state today.
+- *A trigger blocking an INSERT at `'received'` as well*: stop. Neither this door nor the
+  normalizers could work, and something else is wrong.
+
+**0b - what to look for:** a unique index on `(source, external_ref)`
+(`canonical_orders_source_external_ref_uk`), possibly beside the partial
+`canonical_orders_unique_active_idx` on `(source, external_ref, location_key) WHERE status !=
+'cancelled'`. The new row's `external_ref` differs, so it conflicts with neither. If a unique
+index exists that the suffix does **not** dodge, stop and re-read the insert.
+
+**0c - what to look for:** whether `raw_payload_id` carries a unique index, and whether
+`check_orphan_raw_orders` or the reconciler assumes `raw_orders -> canonical_orders` is 1:1.
+- *No unique index and no 1:1 assumption*: nothing to do. Two canonical rows per raw order is
+  the honest record of what happened - the raw payload really did produce two orders.
+- *A unique index on `raw_payload_id`*: the insert will fail. Insert `NULL` instead (the column
+  is nullable by design, for purged raw rows) and accept that `push_lightspeed_order` loses the
+  promised-time hints it reads from `raw_orders` for that order.
+- *The reconciler or the orphan check counts on 1:1*: it will now see a second canonical row
+  for one raw order. Read what it does with that before the first real handover - a false
+  "orphan" alert is noise, a re-enqueue would be worse.
+
+**0d - what to look for:** short, human, printable shop names. This door is the first thing in
+either repo to *read* `dim_location.name` - `Load dim_location` selects
+`lightspeed_company_id, ls_table_ids, payment_type_ids`, `ls_receipt_watchdog` selects
+`is_active`, `Build Order Payload` reads `timezone`, and `monitor_order_blocking_alerts` maps
+shop names with a hardcoded `CASE c.location_key WHEN 'LOC_AALST' THEN 'Tipzakske' ...` rather
+than joining the column. So nothing has been keeping it tidy. Read on 2026-09-10 it was
+`Tipzakske`, `De Frietbooster`, `De Frietchalet`, `De Friturist`.
+- *Still short and human*: nothing to do; the ticket reads `... · OVERNAME DE FRIETCHALET`.
+- *Long, or carrying a suffix a customer should not read* (a legal entity, a city code, a
+  "(gesloten)" marker): shorten the `name` values, or change the one line in the insert to a
+  column the shop controls. Do not leave it: it prints on a customer's receipt.
+- *NULL for some shop*: already handled - the insert falls back to the `location_key`, so the
+  ticket says `OVERNAME LOC_AALST`. Ugly, never silent, never blocking.
 
 ### Step 1. Create the shared secret
 
@@ -145,13 +278,31 @@ Import `docs/workflows/orders_overname_uitvoeren.json` through the n8n UI. It ar
 Do not activate yet. Tag it `fos:orders` and put it in the `FrituurOS/orders` folder, like its
 siblings.
 
-### Step 3. Dry run
+### Step 3. Dry run - choose the path before you start
 
-Pick a **safe** order: a canary or an obvious test order, never a customer's food.
+There are two paths and they prove different things. Read both, pick one deliberately.
+
+**Path A - the safe one. Proves the door, does not prove the print.** Use an order whose
+`external_ref` contains `TEST` (or a `TEST` / `NIET BEREIDEN` item name, or a `SHOP-` PLU).
+`push_lightspeed_order`'s `Gate: Location Active?` requires `location_active = true` **and**
+`is_test_order = false`, so such an order is stopped at that gate: it never reaches Lightspeed
+and **no ticket prints anywhere**. What Path A proves: the token gate, the check answer, the
+cancel, the new row, the queue message, and that the pusher picked it up and dropped it at the
+gate. What it cannot prove: the ticket. Step 4's "green" for a Path A run stops at
+`status = 'pushing_ls'` and a `deliverect_yield`-style stop, **not** at `ls_sent`.
+
+**Path B - the real one. Proves the print, and prints a real ticket at a real till.** A canary
+(`is_canary = true`) is **not** caught by that gate: `is_test_order` looks only at
+`external_ref` and item names, so a canary goes all the way through and the target shop's
+printer produces a ticket for food nobody ordered. Choose Path B only if you accept that, only
+outside a rush, and only after telling the target shop it is coming. **Attached to Path B, not
+optional:** void the printed ticket at the target POS afterwards, and void the origin ticket
+too if the origin had already printed. Lightspeed has no cancel call; nobody else will do it.
 
 ```sql
--- Canaries and test orders that are still in a movable state.
+-- Path A candidates (test orders) and Path B candidates (canaries), still movable.
 select co.id, co.external_ref, co.source, co.status, co.location_key, co.is_canary,
+       (co.external_ref ilike '%TEST%') as stopt_bij_de_gate,
        jsonb_array_length(co.items) as regels
   from public.canonical_orders co
  where co.status in ('received','normalized','pushing_ls','ls_sent',
@@ -161,8 +312,8 @@ select co.id, co.external_ref, co.source, co.status, co.location_key, co.is_cana
  limit 20;
 ```
 
-If none exists, make one the way the canary path makes them, or run the dry run outside
-opening hours on a real order of your own and void the ticket by hand afterwards.
+If neither exists, make one the way the canary path makes them (Path B) or place a `TEST` order
+yourself (Path A). Never a customer's food.
 
 Then, with the workflow still inactive, use n8n's **Execute Workflow** with pinned webhook data
 (or activate it, run the two calls below, and deactivate again - decide before you start; two
@@ -179,7 +330,7 @@ curl -sS -X POST https://<n8n-host>/webhook/order-overname \
 curl -sS -X POST https://<n8n-host>/webhook/order-overname \
   -H 'content-type: application/json' \
   -H "x-overname-token: $OVERNAME_WEBHOOK_TOKEN" \
-  -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE","van_naam":"TIPZAKSKE"}'
+  -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE"}'
 ```
 
 ### Step 4. Verify the result (read-only)
@@ -202,13 +353,19 @@ select * from public.dlq_alerts
  order by created_at desc;
 ```
 
-Green means: old row `cancelled` with `cancel_reason = 'overname_naar_<LOC>'`; new row
-`ls_sent`/`ls_accepted` with an `ls_order_id`; **the ticket printed at the target shop**; no
-`dlq_alerts`. If the origin order had a `shipday_order_id`, `shipday_compensate` DELETEs it -
-check that `shipday_compensated_at` on the old row fills in within a minute or two.
+**Green after Path A** (test order): old row `cancelled` with
+`cancel_reason = 'overname_naar_<LOC>'`; new row exists at the target shop at `normalized` and
+then `pushing_ls`; a queue message was consumed; no `dlq_alerts`. The new row does **not** reach
+`ls_sent` and no ticket prints - `Gate: Location Active?` stopped it because `is_test_order` is
+true. That is the expected end of Path A, not a failure.
 
-**Manual step that no code can do:** if the origin shop had already printed, void that ticket
-at the POS. Lightspeed has no cancel call.
+**Green after Path B** (canary): all of the above, plus the new row at `ls_sent`/`ls_accepted`
+with an `ls_order_id`, and **a ticket on the target shop's printer**. Then, as part of the run
+and not as an afterthought: void that ticket at the target POS, and void the origin ticket too
+if the origin had already printed. Lightspeed has no cancel call, so nobody else will.
+
+Either path: if the move response carried an `oud_shipday_order_id`, the ride is still the
+origin shop's - delete it in Shipday there and create it again at the target, by hand.
 
 ### Step 5. Publish
 
