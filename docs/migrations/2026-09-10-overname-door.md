@@ -76,14 +76,51 @@ reachable from anywhere else, that reasoning expires.**
 | `check`, order exists | 200 | `[ { ok: true, location_key, bestaat, actief, deliverect_slikt, ontbrekende_plus, aanbiedbaar }, ... ]` - one object per candidate, `location_key` order |
 | `check`, unknown order | 200 | `[ { ok: false, reden: "order_bestaat_niet", canonical_id } ]` |
 | `move`, moved | 200 | `[ { ok: true, canonical_id, external_ref, msg_id, van_location_key, huidige_status, oud_shipday_order_id } ]` |
-| `move`, order not movable | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status } ]` - `huidige_status` is the origin's status as the statement found it: `cancelled`, `complete` or `ls_rejected` |
+| `move`, origin already cancelled BY THIS DOOR | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status: "cancelled", overname_canonical_id, overname_external_ref, overname_gevonden: 1 } ]` - the order moved on an earlier call; **record `overname_canonical_id` and carry on**, this is the recovery path |
+| `move`, origin cancelled by something else | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status: "cancelled", overname_gevonden: 0 } ]` - no row of this door's making; a plain refusal |
+| `move`, origin cancelled and MORE than one handover row found | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status: "cancelled", overname_gevonden: 2 } ]` - the ids are deliberately withheld; a human decides |
+| `move`, order not movable for another reason | 200 | `[ { ok: false, reden: "niets_gewijzigd", canonical_id, huidige_status } ]` - `huidige_status` is `complete` or `ls_rejected` |
 | `move`, unknown order | 200 | `[ { ok: false, reden: "order_bestaat_niet", canonical_id, huidige_status: null } ]` |
 | any action, wrong shared secret | 200 | `[ { ok: false, reden: "niet_toegelaten" } ]` - nothing else, ever |
 | malformed request, database error | 500 | n8n's generic envelope. No diagnosis - read the execution in n8n |
 
 `canonical_id` on an `ok: true` move is the **new** order's id; on a refusal there is no new
-order, so it echoes the id you asked about. `huidige_status` on an `ok: true` move is the
-status the origin had **before** the cancel.
+order *in this call*, so it echoes the id you asked about. `huidige_status` on an `ok: true`
+move is the status the origin had **before** the cancel.
+
+### The three `overname_*` fields, and why they exist
+
+They are meaningful only on a `niets_gewijzigd` refusal of an origin that is already
+`cancelled`; elsewhere they are null / 0.
+
+| Field | Meaning |
+|---|---|
+| `overname_canonical_id` | the id of the order this door created on an EARLIER call - the food the customer is waiting for, at the target shop. Present only when exactly one was found |
+| `overname_external_ref` | that order's `external_ref`, the one carrying the ` · OVERNAME ` marker |
+| `overname_gevonden` | how many handover rows were found for this origin: 0, 1, or more |
+
+**The money is why.** If the OS calls `move`, the move succeeds, and then the OS's own
+write-back of the new order id fails - a blip, a restart - the order HAS moved but the OS never
+records it. The manual task "void the receipt at the origin till" then never appears, and that
+void is the only thing that moves the revenue between two legal entities. From every screen it
+looks like the transfer simply did not happen, while the money quietly stays in the wrong BV.
+Answering the retry with only "already cancelled" is honest and useless: the caller still
+cannot learn which order the food became. These fields let it recover on the second call.
+
+**How it is found:** by the marker this door itself writes - the origin's own `external_ref`
+followed by ` · OVERNAME `, matched with `starts_with()` rather than a `LIKE` pattern, because
+an `external_ref` is data and may contain `%` or `_`. The marker in the INSERT and the marker
+in this lookup are one mechanism: change one and you must change the other, or the lookup goes
+blind and stays silent about it. The scan is over 5 078 rows (measured 2026-09-10) and only
+runs when the origin is already cancelled.
+
+**Why more than one is withheld rather than guessed.** Two handover rows for one origin means
+either the same order was moved twice, or a chain (A to B to C) - a legitimate chain produces
+two matches. Both are a human's call, not a guess this door gets to make. It says how many it
+found and stops.
+
+This path **reads only**. It writes nothing, enqueues nothing, and changes no status: it makes
+a refusal useful, it does not retry the move.
 
 **What `reden: "niets_gewijzigd"` does and does not prove.** It says the door's statement
 matched nothing and returned no new order. It is *probably* also true that the origin was left
@@ -112,8 +149,9 @@ happened or, in the one case where the transaction committed and the HTTP respon
 everything happened. Do not assume either: read the origin row, or ask `check` about it.
 **Retrying is safe:** a second `move` on the same `canonical_id` finds the origin already
 `cancelled`, the cancel matches nothing, and the door answers
-`{ ok: false, reden: "niets_gewijzigd", huidige_status: "cancelled" }`. It cannot move the same
-order twice.
+`{ ok: false, reden: "niets_gewijzigd", huidige_status: "cancelled" }` - carrying
+`overname_canonical_id` if the first call was this door's doing, which is exactly how a caller
+recovers from a lost response. It cannot move the same order twice.
 
 ## What was checked against prod before the SQL was written
 
@@ -404,8 +442,12 @@ curl -sS -X POST https://<n8n-host>/webhook/order-overname \
   -d '{"action":"move","canonical_id":"<uuid>","target_location_key":"LOC_BERLARE"}'
 
 # 3c. NOT optional: produce a refusal on purpose and record the RAW body.
-#     The same call again - the origin is cancelled now, so the door must refuse.
-#     Expect HTTP 200 and [{"ok":false,"reden":"niets_gewijzigd","huidige_status":"cancelled",...}]
+#     The same call again - the origin is cancelled now, so the door must refuse AND hand back
+#     the order it created the first time. That is the recovery path the OS needs when its own
+#     write-back fails, and this is the only evidence it works.
+#     Expect HTTP 200, "reden":"niets_gewijzigd", "huidige_status":"cancelled",
+#     "overname_gevonden":1, and an "overname_canonical_id" equal to the canonical_id that
+#     call 3b returned. Compare those two by eye - equal is the whole point.
 curl -sS -o /tmp/overname-refusal.json -w 'HTTP %{http_code}\n' \
   -X POST https://<n8n-host>/webhook/order-overname \
   -H 'content-type: application/json' \
