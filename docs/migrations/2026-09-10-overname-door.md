@@ -539,3 +539,82 @@ Expect `production_success` to climb by one per real handover.
 The workflow is called `os_webhook_order_overname`, in Srova's own convention
 (`shipday_webhook_status`, `shopify_webhook_order_create`), not the OS dictionary - Srova's
 naming is a standing exception. The file name comes from the plan.
+
+---
+
+## Dry run RESULT — 11/09/2026, Path A, all green
+
+Run at 01:30 Brussels (shops closed, zero orders in the previous two hours). Imported as
+`e8UfR5ZMyMGBS4SW`, tagged `fos:orders`, published, webhook registered. Step 0's four questions
+were closed first and all four landed on the expected answer: no INSERT-time trigger constrains
+`status` (only `BEFORE UPDATE OF status` validates transitions), both unique indexes key on
+`external_ref` so the marker dodges them, nothing assumes `raw_orders -> canonical_orders` is
+1:1, and `dim_location.name` is short and printable.
+
+**The test order was a real Shopify order, deliberately.** Created through the Admin API at
+Tipzakske with no customer, no email and **no payment** — the Shopify docs are explicit that
+"orders that interact with an online gateway can't be deleted", so a gateway-less order is the
+one shape that can be removed again. Line item `TEST - NIET BEREIDEN - overname dry run`, which
+made `is_test_order` true and stopped it at `Gate: Location Active?`. **Verified in the database
+BEFORE calling the door**, not assumed. It was deleted from Shopify afterwards (DELETE 200, GET
+404).
+
+### The raw bodies, as they actually came back
+
+```
+# wrong secret
+[{"ok":false,"reden":"niet_toegelaten"}]                                        HTTP 200
+
+# unknown order
+[{"ok":false,"reden":"order_bestaat_niet","canonical_id":"00000000-0000-4000-8000-000000000000"}]
+                                                                                 HTTP 200
+
+# check, four candidates  (one row per candidate - this is what responseData=allEntries buys)
+[{"ok":true,"location_key":"LOC_AALST","bestaat":true,"actief":true,"deliverect_slikt":false,
+  "ontbrekende_plus":["SHOP-37610838655324"],"aanbiedbaar":false}, … x4 …]        HTTP 200
+
+# move
+[{"ok":true,"reden":null,"canonical_id":"2f293d7e-39bc-4ed4-9063-85c95c7c258d",
+  "huidige_status":"normalized","external_ref":"Shopify - #online-5873 · OVERNAME TIPZAKSKE",
+  "van_location_key":"LOC_AALST","oud_shipday_order_id":null,
+  "overname_canonical_id":null,"overname_external_ref":null,"overname_gevonden":0,
+  "msg_id":"4881"}]                                                              HTTP 200
+
+# move again - the recovery path
+[{"ok":false,"reden":"niets_gewijzigd","canonical_id":"4bf08693-…","huidige_status":"cancelled",
+  "external_ref":null,"van_location_key":null,"oud_shipday_order_id":null,
+  "overname_canonical_id":"2f293d7e-39bc-4ed4-9063-85c95c7c258d",
+  "overname_external_ref":"Shopify - #online-5873 · OVERNAME TIPZAKSKE",
+  "overname_gevonden":1,"msg_id":null}]                                          HTTP 200
+```
+
+`overname_canonical_id` on the refusal is byte-for-byte the `canonical_id` the successful move
+returned. That equality is the whole point of the recovery path: when the OS's own write-back
+fails, a retry learns which order the food became, so the manual till-void task still appears
+and the revenue does not stay in the wrong BV.
+
+Note `reden` is present-but-**null** on success. A caller must branch on `ok`, never on
+"does the body have a reden key".
+
+### What the database held afterwards
+
+Origin `cancelled` with `cancel_reason = overname_naar_LOC_DENDER`, new row at `LOC_DENDER`
+carrying the marker, `ls_order_id` null on **both** — no ticket printed anywhere, which is what
+Path A is for. `msg_id` null on the refusal, so a refusal enqueues nothing.
+
+### Cleanup, and one thing deliberately NOT cleaned
+
+The Shopify order was deleted. The temp workflow that created it was deleted. The new canonical
+row was **cancelled**, not deleted, and the seven `order_state_history` rows were left standing.
+
+That was a decision, not laziness. `order_state_history` is append-only, enforced by
+`order_state_history_no_delete`, and the FK cascades — so removing the canonical rows means
+bypassing that guard. The guard exists so the story of an order can never be rewritten, and this
+test really happened: a real order really was created and really was moved. Erasing the audit
+trail to tidy up a test is exactly what it is there to prevent, and doing it once establishes
+that the trail is deletable when inconvenient.
+
+Cancelling instead costs nothing that matters: `v_orders_bon` and the day board both exclude
+cancelled orders, so no euro is counted anywhere (verified: 0 cents on any board), and what is
+left is two TEST-named cancelled orders among the 620 cancelled orders that were already there.
+Which is exactly what a test order is.
