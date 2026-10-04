@@ -75,7 +75,7 @@
         100
       ],
       "parameters": {
-        "query": "=SELECT co.id, co.source, co.external_ref, co.location_key, co.order_type, co.status, co.customer, co.items, co.payment, co.vat_lines, co.correlation_id, co.ls_order_id, co.ls_customer_id, COALESCE(dl.is_active, true) AS location_active, COALESCE(dl.deliverect_active, false) AS deliverect_active, dl.delivery_plu, ro.raw_payload->>'restaurant_estimated_delivery_time' AS raw_est_delivery, ro.raw_payload->>'restaurant_estimated_pickup_time' AS raw_est_pickup, ro.raw_payload->'note_attributes' AS raw_note_attributes, COALESCE((  co.external_ref ILIKE '%TEST%'   OR EXISTS (    SELECT 1 FROM jsonb_array_elements(co.items) AS i(v)     WHERE (v->>'name') ILIKE '%TEST%'        OR (v->>'name') ILIKE '%NIET BEREIDEN%'  )), false) AS is_test_order FROM canonical_orders co LEFT JOIN dim_location dl ON dl.location_key = co.location_key LEFT JOIN raw_orders ro ON ro.id = co.raw_payload_id WHERE co.id = '{{ $json.canonical_id }}'::uuid;",
+        "query": "=SELECT co.id, co.source, co.external_ref, co.location_key, co.order_type, co.status, co.customer, co.items, co.payment, co.vat_lines, co.correlation_id, co.ls_order_id, co.ls_customer_id, COALESCE(dl.is_active, true) AS location_active, COALESCE(dl.deliverect_active, false) AS deliverect_active, dl.delivery_plu, ro.raw_payload->>'restaurant_estimated_delivery_time' AS raw_est_delivery, ro.raw_payload->>'restaurant_estimated_pickup_time' AS raw_est_pickup, ro.raw_payload->'note_attributes' AS raw_note_attributes, COALESCE((  co.external_ref ILIKE '%TEST%'   OR EXISTS (    SELECT 1 FROM jsonb_array_elements(co.items) AS i(v)     WHERE (v->>'name') ILIKE '%TEST%'        OR (v->>'name') ILIKE '%NIET BEREIDEN%'  )), false) AS is_test_order, EXISTS (SELECT 1 FROM public.orders_kassa_winkel_periode p WHERE p.location_key = co.location_key AND co.created_at >= p.van AND (p.tot IS NULL OR co.created_at < p.tot)) AS os_kassa FROM canonical_orders co LEFT JOIN dim_location dl ON dl.location_key = co.location_key LEFT JOIN raw_orders ro ON ro.id = co.raw_payload_id WHERE co.id = '{{ $json.canonical_id }}'::uuid;",
         "options": {},
         "operation": "executeQuery"
       },
@@ -859,6 +859,82 @@
         }
       },
       "typeVersion": 2.5
+    },
+    {
+      "id": "if-os-kassa-yield-ls",
+      "name": "IF NOT OS Kassa?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        985,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "os-kassa",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.os_kassa }}",
+              "rightValue": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "log-os-kassa-yield-ls",
+      "name": "Log OS Kassa Yield (LS)",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1050,
+        600
+      ],
+      "parameters": {
+        "query": "=INSERT INTO public.order_state_history (canonical_order_id, from_state, to_state, reason, correlation_id) VALUES ('{{ $('Load Canonical Order').item.json.id }}'::uuid, '{{ $('Load Canonical Order').item.json.status }}'::order_state, '{{ $('Load Canonical Order').item.json.status }}'::order_state, 'os_kassa_yield', NULLIF('{{ $('Load Canonical Order').item.json.correlation_id }}', '')::uuid);",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "ack-os-kassa-yield-ls",
+      "name": "Ack OS Kassa Yield (LS)",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        600
+      ],
+      "parameters": {
+        "query": "=SELECT public.pgmq_delete_order('q_orders_push_ls', {{ $('Parse Messages').item.json.msg_id }});",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      },
+      "typeVersion": 2.5
     }
   ],
   "connections": {
@@ -1186,7 +1262,7 @@
       "main": [
         [
           {
-            "node": "Load dim_location",
+            "node": "IF NOT OS Kassa?",
             "type": "main",
             "index": 0
           }
@@ -1205,6 +1281,35 @@
         [
           {
             "node": "Ack Deliverect Yield (LS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF NOT OS Kassa?": {
+      "main": [
+        [
+          {
+            "node": "Load dim_location",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log OS Kassa Yield (LS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log OS Kassa Yield (LS)": {
+      "main": [
+        [
+          {
+            "node": "Ack OS Kassa Yield (LS)",
             "type": "main",
             "index": 0
           }
