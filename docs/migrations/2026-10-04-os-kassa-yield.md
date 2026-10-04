@@ -21,3 +21,14 @@ until a shop is switched in FrituurOS.
 by SQL on the node table (the published version is a snapshot), read back with `mode=active`, then switch the shop
 in FrituurOS (Orders · Kassa). Check after: for the switched shop, no new `ls_sent` after the switch, and every new
 order appears in the till's online queue.
+
+## Deployed 05/10/2026 (owner-approved), plus one fix found while watching it
+
+Applied to the live workflow through the n8n API (version after 14), read back with `mode=active`. A real order
+passed the new gate with `os_kassa = false` straight on to `Load dim_location`.
+
+**Fix in the same pass:** `DLQ: Archive + ls_failed` inserted `co.source::text` into `dlq_alerts.source`, which
+is of type `order_source`. Postgres refused it every time, so the archive, the `ls_failed` status and the alert
+were all rolled back: measured 0 `ls_push` rows in `dlq_alerts` ever. Four orders rejected by Lightspeed
+(HTTP 404; MGGRBY Aalst 15/09, #online42068 Berlare 22/09, 16295 Dender 26/09, 16357 Dender 02/10) were retried
+every minute for weeks with nobody told. The cast is gone; tested in a rolled-back transaction first.
