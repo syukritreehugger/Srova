@@ -32,3 +32,17 @@ is of type `order_source`. Postgres refused it every time, so the archive, the `
 were all rolled back: measured 0 `ls_push` rows in `dlq_alerts` ever. Four orders rejected by Lightspeed
 (HTTP 404; MGGRBY Aalst 15/09, #online42068 Berlare 22/09, 16295 Dender 26/09, 16357 Dender 02/10) were retried
 every minute for weeks with nobody told. The cast is gone; tested in a rolled-back transaction first.
+
+## Why Lightspeed answered 404 (found 05/10/2026, fixed the same night)
+
+The 404 is the second error. The first push of each of the four orders created the customer in LS
+(`shop-<external_ref>@frituuros.internal`) and then failed further on; the LS customer id was only saved by
+`Success: Update + Enqueue Poll`, so it was lost. Every retry tried to create the same customer again, LS answered
+400 code 11301 "a customer with this email already exists", the flow went on with customer id 0, and
+`/onlineordering/customer/0/establishmentorder` answered 404 "No customer found with id 0". One hiccup on the
+first attempt therefore failed an order forever.
+
+**Fix:** `Save LS Customer Id` between `POST /core/customer` and `Build Order Payload` stores the id the moment LS
+returns it (only when > 0, never over an existing one, always one output row). The existing fallback in
+`Build Order Payload` (`order.ls_customer_id`) then carries a retry. Tested in a rolled-back transaction, deployed
+owner-approved. The four old orders were deliberately NOT re-pushed: their kitchen tickets would print weeks late.

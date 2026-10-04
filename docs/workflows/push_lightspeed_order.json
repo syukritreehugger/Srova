@@ -935,6 +935,28 @@
         }
       },
       "typeVersion": 2.5
+    },
+    {
+      "id": "save-ls-customer-id",
+      "name": "Save LS Customer Id",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2125,
+        250
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {},
+        "query": "=WITH u AS (\n  UPDATE canonical_orders SET ls_customer_id = NULLIF('{{ (typeof $json.body === 'number' && $json.body > 0) ? $json.body : (($json.body && $json.body.id) ? $json.body.id : '') }}', '')::bigint\n   WHERE id = '{{ $('Load Canonical Order').item.json.id }}'::uuid AND ls_customer_id IS NULL\n     AND NULLIF('{{ (typeof $json.body === 'number' && $json.body > 0) ? $json.body : (($json.body && $json.body.id) ? $json.body.id : '') }}', '') IS NOT NULL\n  RETURNING id)\nSELECT count(*) AS saved FROM u;"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      },
+      "notes": "Saves the LS customer id the moment it exists. Without it, a failed first push left a customer in LS that every retry tried to create again (11301 email exists), went on with customer 0 and got 404 forever. Always returns one row, so the flow continues."
     }
   ],
   "connections": {
@@ -1019,7 +1041,7 @@
       "main": [
         [
           {
-            "node": "Build Order Payload",
+            "node": "Save LS Customer Id",
             "type": "main",
             "index": 0
           }
@@ -1310,6 +1332,17 @@
         [
           {
             "node": "Ack OS Kassa Yield (LS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save LS Customer Id": {
+      "main": [
+        [
+          {
+            "node": "Build Order Payload",
             "type": "main",
             "index": 0
           }
