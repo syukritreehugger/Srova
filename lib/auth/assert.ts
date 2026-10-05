@@ -19,7 +19,7 @@ export async function assertManagement(): Promise<AssertResult> {
   if (!user) return { ok: false, error: 'Not authenticated' };
 
   const role =
-    (user.app_metadata?.['role'] as string | undefined) ?? 'management';
+    (user.app_metadata?.['role'] as string | undefined) ?? 'none';
   if (role !== 'management' && role !== 'admin') {
     return { ok: false, error: 'Insufficient role' };
   }

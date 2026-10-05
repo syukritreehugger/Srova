@@ -3,6 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const PROTECTED_PATH = /^\/(?!login|mfa|api\/auth|api\/health|_next|favicon\.ico)(.*)/;
 const AUTH_PATHS = new Set(['/login', '/mfa']);
+// Srova shares its auth database with the OS (91 accounts, flexi workers and till devices
+// among them, none with a Srova role). Only an EXPLICIT role opens the console.
+const CONSOLE_ROLES = new Set(['management', 'admin']);
+const roleOf = (user: { app_metadata?: Record<string, unknown> } | null): string =>
+  (user?.app_metadata?.['role'] as string | undefined) ?? 'none';
 
 function requiresMFA(_role: string): boolean {
   // MFA enforcement disabled during development — enable for production cutover
@@ -48,7 +53,7 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED_PATH.test(pathname);
 
   if (!isProtected) {
-    if (user && AUTH_PATHS.has(pathname)) {
+    if (user && AUTH_PATHS.has(pathname) && CONSOLE_ROLES.has(roleOf(user))) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return response;
@@ -60,8 +65,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const role: string =
-    (user.app_metadata?.['role'] as string | undefined) ?? 'management';
+  const role = roleOf(user);
+  if (!CONSOLE_ROLES.has(role)) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('error', 'no_access');
+    return NextResponse.redirect(loginUrl);
+  }
 
   if (requiresMFA(role)) {
     const { data: aal } =
