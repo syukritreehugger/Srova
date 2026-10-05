@@ -1,0 +1,48 @@
+# push_lightspeed_order: yield to the OS till (FrituurOS kassa, issue #51 in FrituurOS-GV)
+
+**What:** when a shop's online orders go to the FrituurOS till instead of Lightspeed, `push_lightspeed_order`
+must not push them to Lightspeed, or they are booked twice. One gate, built exactly like the Deliverect yield:
+
+- `Load Canonical Order` gains `os_kassa`: true when the order was created inside a period in
+  `public.orders_kassa_winkel_periode` (owned by FrituurOS; `postgres` can read it). Periods, not a flag, so an order
+  created while the shop was on the OS till stays there if the shop switches back to Lightspeed.
+- `IF NOT OS Kassa?` sits between `IF NOT Deliverect Active?` and `Load dim_location`. When `os_kassa` is true:
+  `Log OS Kassa Yield (LS)` writes `order_state_history` with reason `os_kassa_yield` (status unchanged), and
+  `Ack OS Kassa Yield (LS)` deletes the queue message. The order keeps its status; the OS till reads it from
+  `canonical_orders` and books it there. Covers Shopify and Takeaway: both enqueue into `q_orders_push_ls`.
+
+**Nothing else changes.** Shipday, Takeaway accept, the PLU mapping, `monitor_stuck_normalized` (only looks at
+Deliverect shops) and `ls_receipt_watchdog` (only orders with an `ls_order_id`) are untouched by an OS-till order.
+
+**Measured 04/10/2026:** 0 of 529 orders of the last 7 days have `os_kassa = true`; deploying this changes nothing
+until a shop is switched in FrituurOS.
+
+**Deploy (pilot day, before switching De Friturist):** apply to the live workflow through the n8n API/MCP, never
+by SQL on the node table (the published version is a snapshot), read back with `mode=active`, then switch the shop
+in FrituurOS (Orders · Kassa). Check after: for the switched shop, no new `ls_sent` after the switch, and every new
+order appears in the till's online queue.
+
+## Deployed 05/10/2026 (owner-approved), plus one fix found while watching it
+
+Applied to the live workflow through the n8n API (version after 14), read back with `mode=active`. A real order
+passed the new gate with `os_kassa = false` straight on to `Load dim_location`.
+
+**Fix in the same pass:** `DLQ: Archive + ls_failed` inserted `co.source::text` into `dlq_alerts.source`, which
+is of type `order_source`. Postgres refused it every time, so the archive, the `ls_failed` status and the alert
+were all rolled back: measured 0 `ls_push` rows in `dlq_alerts` ever. Four orders rejected by Lightspeed
+(HTTP 404; MGGRBY Aalst 15/09, #online42068 Berlare 22/09, 16295 Dender 26/09, 16357 Dender 02/10) were retried
+every minute for weeks with nobody told. The cast is gone; tested in a rolled-back transaction first.
+
+## Why Lightspeed answered 404 (found 05/10/2026, fixed the same night)
+
+The 404 is the second error. The first push of each of the four orders created the customer in LS
+(`shop-<external_ref>@frituuros.internal`) and then failed further on; the LS customer id was only saved by
+`Success: Update + Enqueue Poll`, so it was lost. Every retry tried to create the same customer again, LS answered
+400 code 11301 "a customer with this email already exists", the flow went on with customer id 0, and
+`/onlineordering/customer/0/establishmentorder` answered 404 "No customer found with id 0". One hiccup on the
+first attempt therefore failed an order forever.
+
+**Fix:** `Save LS Customer Id` between `POST /core/customer` and `Build Order Payload` stores the id the moment LS
+returns it (only when > 0, never over an existing one, always one output row). The existing fallback in
+`Build Order Payload` (`order.ls_customer_id`) then carries a retry. Tested in a rolled-back transaction, deployed
+owner-approved. The four old orders were deliberately NOT re-pushed: their kitchen tickets would print weeks late.
