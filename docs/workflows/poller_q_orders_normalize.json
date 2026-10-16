@@ -1,0 +1,122 @@
+{
+  "name": "poller_q_orders_normalize",
+  "nodes": [
+    {
+      "id": "schedule",
+      "name": "Every 10s",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "pgmq-read",
+      "name": "pgmq_read_order(q_orders_normalize, vt=60, qty=10)",
+      "type": "n8n-nodes-base.postgres",
+      "notes": "Pops up to 10 messages per tick with a 60s visibility timeout. The processor + envelope must complete inside 60s; otherwise the message reappears and read_ct increments.",
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "query": "SELECT msg_id, read_ct, enqueued_at, vt, message FROM public.pgmq_read_order('q_orders_normalize', 60, 10)",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "build-envelope",
+      "name": "Build Envelope",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Build the lib_retry_envelope envelope per pgmq message. One per item.\n// UUID v4 via Math.random — correlation_id is for tracing, not authentication,\n// so cryptographic randomness isn't required (n8n sandbox blocks crypto).\nfunction randomUUID() {\n  const hex = '0123456789abcdef';\n  let out = '';\n  for (let i = 0; i < 32; i++) {\n    let c;\n    if (i === 12) c = '4';\n    else if (i === 16) c = hex[8 + Math.floor(Math.random() * 4)];\n    else c = hex[Math.floor(Math.random() * 16)];\n    out += c;\n    if (i === 7 || i === 11 || i === 15 || i === 19) out += '-';\n  }\n  return out;\n}\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  if (!j.msg_id) continue;\n  out.push({ json: {\n    queue_name: 'q_orders_normalize',\n    msg_id: j.msg_id,\n    attempt_count: j.read_ct ?? 1,\n    processor_workflow_id: 'OdYCsotEru63kxN7',\n    payload: j.message,\n    correlation_id: randomUUID(),\n    raw_payload_id: j.message?.raw_id ?? null,\n  } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "invoke-envelope",
+      "name": "Invoke lib_retry_envelope",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "notes": "RFC-002 lib_retry_envelope: classifies processor outcome, calls pgmq_delete_order on success, pgmq_set_vt_order on retryable, pgmq_archive_order + dlq_alerts INSERT on exhausted/non-retryable. processor_workflow_id field on the envelope routes to shopify_normalize_to_canonical (OdYCsotEru63kxN7).",
+      "position": [
+        860,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "I62yzZFLlFrXl1VT"
+        },
+        "mode": "each"
+      },
+      "typeVersion": 1.2
+    }
+  ],
+  "connections": {
+    "Every 10s": {
+      "main": [
+        [
+          {
+            "node": "pgmq_read_order(q_orders_normalize, vt=60, qty=10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pgmq_read_order(q_orders_normalize, vt=60, qty=10)": {
+      "main": [
+        [
+          {
+            "node": "Build Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Envelope": {
+      "main": [
+        [
+          {
+            "node": "Invoke lib_retry_envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

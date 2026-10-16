@@ -1,0 +1,306 @@
+{
+  "name": "shopify_webhook_order_fulfilled",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "frituur-os/shopify/order-fulfilled",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Webhook (raw body)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "frituur-os-shopify-order-fulfilled",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT name, decrypted_secret,\n  encode(hmac(decode($1, 'base64'), decrypted_secret::bytea, 'sha256'), 'base64') AS computed_hmac\nFROM vault.decrypted_secrets\nWHERE name LIKE 'shopify_webhook_secret_LOC_%'",
+        "options": {
+          "queryReplacement": "={{ $('Webhook (raw body)').first().binary?.data?.data ?? '' }}"
+        }
+      },
+      "id": "load-secrets",
+      "name": "Load Vault Secrets",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const hostToLocation = { 'tipzakske.myshopify.com': 'LOC_AALST', 'frietbooster.myshopify.com': 'LOC_BERLARE', 'de-frietchalet.myshopify.com': 'LOC_DENDER', 'friturist.myshopify.com': 'LOC_FRITURIST' };\nconst hook = $('Webhook (raw body)').first();\nconst headers = hook.json.headers ?? {};\nconst hmacHeader = headers['x-shopify-hmac-sha256'] ?? '';\nconst webhookId = headers['x-shopify-webhook-id'] ?? null;\nconst topic = headers['x-shopify-topic'] ?? null;\nconst sourceIp = headers['x-forwarded-for'] ?? null;\nconst hostHeader = (headers['x-shopify-shop-domain'] ?? '').toLowerCase();\nconst body_b64 = hook.binary?.data?.data ?? '';\nconst location_key = hostToLocation[hostHeader] ?? null;\nif (!location_key) return [{ json: { outcome: 'unknown_host', http_status: 401, log: { event: 'unknown_host', host: hostHeader, source_ip: sourceIp, webhook_id: webhookId, topic } } }];\nconst rows = $items('Load Vault Secrets').map(i => i.json);\nconst byCur = Object.fromEntries(rows.map(r => [r.name, r.computed_hmac]));\nconst expCur = byCur['shopify_webhook_secret_' + location_key] ?? null;\nconst expPrev = byCur['shopify_webhook_secret_' + location_key + '_prev'] ?? null;\nif (!expCur) return [{ json: { outcome: 'config_missing', http_status: 500, location_key, log: { event: 'webhook_secret_missing', location_key } } }];\nlet matched = null;\nif (hmacHeader && expCur && hmacHeader === expCur) matched = 'current';\nelse if (hmacHeader && expPrev && hmacHeader === expPrev) matched = 'previous';\nif (!matched) return [{ json: { outcome: 'hmac_fail', http_status: 401, location_key, log: { event: 'hmac_fail', location_key, source_ip: sourceIp, webhook_id: webhookId, topic } } }];\nlet order; try {\n  const bin = atob(body_b64);\n  const u8 = Uint8Array.from(bin, c => c.charCodeAt(0));\n  order = JSON.parse(new TextDecoder('utf-8').decode(u8));\n} catch { return [{ json: { outcome: 'invalid_payload', http_status: 200, location_key, log: { event: 'invalid_payload', location_key, webhook_id: webhookId } } }]; }\n// 2026-10-16: someone bulk-fulfilled 16k+ historical orders (2022-2026) in Shopify admin;\n// every one fired orders/updated + orders/fulfilled, flooding workers and raw_orders.\n// Updates for orders older than 7 days carry nothing the pipeline acts on (a live order\n// is created and fulfilled the same day) -> acknowledge with 200 and stop. Reuses the\n// invalid_payload route (200, no insert) so no switch/connection edits are needed.\nconst createdMs = Date.parse(order?.created_at ?? '');\nif (Number.isFinite(createdMs) && (Date.now() - createdMs) > 7 * 24 * 3600 * 1000) {\n  return [{ json: { outcome: 'invalid_payload', http_status: 200, location_key, log: { event: 'ignored_stale_order', location_key, order_name: order?.name ?? null, created_at: order?.created_at, topic, webhook_id: webhookId } } }];\n}\nconst external_ref = order?.name ? ('Shopify - ' + order.name) : null;\nreturn [{ json: { outcome: 'accepted', http_status: 200, location_key, external_ref, raw_payload: order, headers, hmac_matched: matched, webhook_id: webhookId, log: { event: 'order_fulfilled_received', location_key, external_ref, webhook_id: webhookId, hmac_matched: matched } } }];\n"
+      },
+      "id": "verify-route",
+      "name": "Verify HMAC + Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "accepted",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "accepted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "reject_401",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "or",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "unknown_host",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "hmac_fail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "config_missing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "invalid_200",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "invalid_payload",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "route-outcome",
+      "name": "Route Outcome",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.raw_orders (source, external_ref, location_key, shopify_order_id, received_at, headers, raw_payload, hmac_valid) VALUES ('shopify'::public.order_source, $1, $2, $3::bigint, now(), $4::jsonb, $5::jsonb, true) ON CONFLICT (shopify_order_id, location_key) DO UPDATE SET received_at = now(), raw_payload = EXCLUDED.raw_payload, headers = EXCLUDED.headers RETURNING id",
+        "options": {
+          "queryReplacement": "={{ $json.external_ref }},={{ $json.location_key }},={{ $json.raw_payload?.id ?? 0 }},={{ JSON.stringify($json.headers) }},={{ JSON.stringify($json.raw_payload) }}"
+        }
+      },
+      "id": "insert-raw",
+      "name": "INSERT raw_orders",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1100,
+        200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9zc3jzWzgtSSJL0O",
+          "name": "Postgres Data Catalog"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "ok",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-200",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "unauthorized",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "respond-401",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1100,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "ok",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-200-invalid",
+      "name": "Respond 200 (invalid_payload)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1100,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (raw body)": {
+      "main": [
+        [
+          {
+            "node": "Load Vault Secrets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Vault Secrets": {
+      "main": [
+        [
+          {
+            "node": "Verify HMAC + Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify HMAC + Route": {
+      "main": [
+        [
+          {
+            "node": "Route Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Outcome": {
+      "main": [
+        [
+          {
+            "node": "INSERT raw_orders",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (invalid_payload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT raw_orders": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}
