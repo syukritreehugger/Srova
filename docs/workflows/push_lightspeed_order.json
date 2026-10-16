@@ -41,7 +41,7 @@
         100
       ],
       "parameters": {
-        "query": "-- 2026-10-16: duplicate push messages (orders already ls_accepted) were re-pushed to\n-- Lightspeed -> 10 duplicate LS orders in one evening, because Check LS Existing missed\n-- them. Hard gate at the source: a message whose canonical order is no longer pushable is\n-- deleted here and never reaches the POS. del is referenced in the final SELECT so the\n-- CTE actually executes (unreferenced non-modifying CTEs are skipped by Postgres).\nWITH m AS (SELECT msg_id, message FROM pgmq_read_order('q_orders_push_ls', 60, 1)),\ndup AS (SELECT m.msg_id FROM m JOIN canonical_orders co ON co.id = (m.message->>'canonical_id')::uuid\n        WHERE co.status NOT IN ('normalized','pushing_ls')),\ndel AS (SELECT pgmq_delete_order('q_orders_push_ls', d.msg_id) AS r FROM dup d)\nSELECT m.msg_id, m.message FROM m\nWHERE m.msg_id NOT IN (SELECT msg_id FROM dup) AND (SELECT count(*) FROM del) >= 0;",
+        "query": "SELECT msg_id, message FROM public.pgmq_read_push_gated(60, 1);",
         "options": {},
         "operation": "executeQuery"
       },
