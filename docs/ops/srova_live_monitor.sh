@@ -18,8 +18,8 @@ while true; do
   N8 "SELECT e.id||'|'||w.name||' '||e.\"startedAt\"::time FROM execution_entity e JOIN workflow_entity w ON w.id=e.\"workflowId\" WHERE e.status='error' AND e.\"startedAt\" > now()-interval '90 seconds' AND w.name IN ('push_lightspeed_order','shopify_normalize_to_canonical','poller_q_orders_normalize','resolve_and_push_takeaway_order','push_shipday_order','shopify_webhook_order_create','shopify_webhook_order_updated');" | while IFS='|' read -r id line; do grep -q "E:$id" "$STATE" || { echo "E:$id" >> "$STATE"; echo "$TS N8N-ERROR $line" | tee -a "$LOG"; }; done
   # 6. heartbeat every 10 ticks
   if [ $((i % 10)) -eq 0 ]; then
-    HB=$(Q "SELECT 'orders_1h='||count(*)||' at_pos='||count(*) FILTER (WHERE status IN ('ls_accepted','shipday_sent','complete'))||' | '||(SELECT string_agg(queue_name||'='||queue_length,' ') FROM pgmq.metrics_all() WHERE queue_name IN ('q_orders_normalize','q_orders_push_ls'))||' | load='||(SELECT substr(pg_read_file('/proc/loadavg'),1,4)) FROM canonical_orders WHERE created_at > now()-interval '1 hour';")
-    echo "$TS HEARTBEAT $HB" | tee -a "$LOG"
+    HB=$(Q "SELECT 'orders_1h='||count(*)||' at_pos='||count(*) FILTER (WHERE status IN ('ls_accepted','shipday_sent','complete'))||' | '||(SELECT string_agg(queue_name||'='||queue_length,' ') FROM pgmq.metrics_all() WHERE queue_name IN ('q_orders_normalize','q_orders_push_ls')) FROM canonical_orders WHERE created_at > now()-interval '1 hour';")
+    echo "$TS HEARTBEAT $HB load=$(cut -c1-4 /proc/loadavg)" | tee -a "$LOG"
   fi
   sleep 60
 done

@@ -15,7 +15,8 @@ appends **only anomalies** to `/var/log/srova_live_monitor.log` (+ a HEARTBEAT e
 Silence means the pipeline is healthy. Start/restart:
 
 ```bash
-ssh vps-ghysels 'pkill -f "[s]rova_live_monitor.sh"; setsid nohup /usr/local/bin/srova_live_monitor.sh >/dev/null 2>&1 </dev/null & disown'
+# runs as a systemd service since 2026-10-16 (survives SSH disconnects and reboots)
+ssh vps-ghysels 'systemctl restart srova-live-monitor.service; systemctl is-active srova-live-monitor.service'
 ssh vps-ghysels 'tail -F /var/log/srova_live_monitor.log'
 ```
 
