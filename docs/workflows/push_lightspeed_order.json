@@ -229,7 +229,8 @@
       "typeVersion": 2.5,
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
-      "notes": "Joef 10/11: DUBBEL CHECKEN line on the ticket (FrituurOS delivery_klant_signaal: missing-item/cold complaint in 30 days). Fail-open: 1.5 s timeout, errors continue, Build Order Payload treats anything else as no flag. Kill switch: disable this node."
+      "notes": "Joef 10/11: DUBBEL CHECKEN line on the ticket (FrituurOS delivery_klant_signaal: missing-item/cold complaint in 30 days). Fail-open: 1.5 s timeout, errors continue, Build Order Payload treats anything else as no flag. Kill switch: disable this node.",
+      "disabled": true
     },
     {
       "id": "build-order-payload",
